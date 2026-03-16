@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.4.1</title>
+<title>SELMANE v1.5.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -11,7 +11,7 @@
   --text:#e8edf5;--muted:#5a6a80;
   --ok:#2ecc71;--warn:#f39c12;--over:#e74c3c;--blue:#3498db;
   --c-drive:#2ecc71;--c-empty:#27ae60;--c-load:#e67e22;--c-unload:#e74c3c;
-  --c-wait:#f39c12;--c-rest:#3498db;--c-other:#9b59b6;
+  --c-wait:#f39c12;--c-rest:#3498db;--c-other:#9b59b6;--c-sleep:#1a5276;
   --c-depart:#00d4ff;--c-arrive:#ff6b9d;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -377,6 +377,25 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   </div>
 
   <div class="settings-section">
+    <div class="settings-section-label">データ管理</div>
+    <div class="settings-item" onclick="exportData()">
+      <div class="settings-item-icon">💾</div>
+      <div class="settings-item-body">
+        <div class="settings-item-name">データ書き出し</div>
+        <div class="settings-item-desc">全データをファイルに保存（バックアップ）</div>
+      </div>
+    </div>
+    <div class="settings-item" onclick="document.getElementById('import-file').click()" style="margin-top:6px">
+      <div class="settings-item-icon">📂</div>
+      <div class="settings-item-body">
+        <div class="settings-item-name">データ読み込み</div>
+        <div class="settings-item-desc">書き出したファイルからデータを復元</div>
+      </div>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+
+  <div class="settings-section">
     <div class="settings-section-label">プロフィール（準備中）</div>
     <div class="settings-item disabled">
       <div class="settings-item-icon">👤</div>
@@ -449,7 +468,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.4.1</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.5.0</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -669,6 +688,7 @@ const TASKS=[
   {id:'unload',name:'荷卸し',     icon:'📤',color:'#e74c3c',isDrive:false},
   {id:'wait',  name:'待機',       icon:'⏳',color:'#f39c12',isDrive:false},
   {id:'rest',  name:'休憩',       icon:'☕',color:'#3498db',isDrive:false},
+  {id:'sleep', name:'休息',       icon:'🛏',color:'#1a5276',isDrive:false,isOffDuty:true},
   {id:'other', name:'その他',     icon:'📋',color:'#9b59b6',isDrive:false},
 ];
 const DAYS_JP=['日','月','火','水','木','金','土'];
@@ -1055,7 +1075,7 @@ function renderWeekNav(){
     const plan = simPlans[dk];
     const isToday = d.getTime()===today.getTime();
     const isActive = simDayKey(currentSimDate)===dk;
-    const totalMin = plan ? plan.tasks.reduce((s,t)=>s+t.durationMin,0) : 0;
+    const totalMin = plan ? plan.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0) : 0;
     const driveMin = plan ? plan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0) : 0;
     weekDriveMins += driveMin;
     weekBoundMins += totalMin;
@@ -1121,7 +1141,7 @@ function calcMonthBoundMins(){
     // キーから日付を再構築
     const parts=k.split('-');
     if(parseInt(parts[0])===year && parseInt(parts[1])===month){
-      total+=plan.tasks.reduce((s,t)=>s+t.durationMin,0);
+      total+=plan.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
     }
   });
   return total;
@@ -1292,6 +1312,7 @@ function simRenderTaskBtns(){
       simSelTask=t.id;
       // 休憩選択時はデフォルト30分
       if(t.id==='rest'){drumH=0;drumM=30;}
+      else if(t.id==='sleep'){drumH=3;drumM=0;}
       else if(drumH===0&&drumM===30){drumH=1;drumM=0;}
       scrollDrumTo('drum-h-inner',H_VALS,drumH);
       scrollDrumTo('drum-m-inner',M_VALS,drumM);
@@ -1699,13 +1720,14 @@ function sifSelectTask(el,tid,color){
     area.innerHTML=`
       <div class="sif-place-row"><label>📍 場所</label><input type="text" class="sif-place place-input" id="sif-place" placeholder="場所（任意）" value="${prevPlace}"></div>`;
   }
-  // 休憩ならデフォ30分
-  if(tid==='rest'){
-    sifDrumH=0;sifDrumM=30;
+  // 休憩ならデフォ30分、休息ならデフォ3時間
+  if(tid==='rest'||tid==='sleep'){
+    sifDrumH=tid==='sleep'?3:0;
+    sifDrumM=tid==='sleep'?0:30;
     const hi=document.getElementById('sif-drum-hi');
     const mi=document.getElementById('sif-drum-mi');
-    if(hi){hi.style.transform=`translateY(${-H_VALS.indexOf(0)*30}px)`;hi.querySelectorAll('.srow-drum-item').forEach(el=>{el.classList.toggle('center',parseInt(el.dataset.val)===0);});}
-    if(mi){mi.style.transform=`translateY(${-M_VALS.indexOf(30)*30}px)`;mi.querySelectorAll('.srow-drum-item').forEach(el=>{el.classList.toggle('center',parseInt(el.dataset.val)===30);});}
+    if(hi){hi.style.transform=`translateY(${-H_VALS.indexOf(sifDrumH)*30}px)`;hi.querySelectorAll('.srow-drum-item').forEach(el=>{el.classList.toggle('center',parseInt(el.dataset.val)===sifDrumH);});}
+    if(mi){mi.style.transform=`translateY(${-M_VALS.indexOf(sifDrumM)*30}px)`;mi.querySelectorAll('.srow-drum-item').forEach(el=>{el.classList.toggle('center',parseInt(el.dataset.val)===sifDrumM);});}
   }
 }
 
@@ -1796,7 +1818,8 @@ function simUpdate(){
   const [sh,sm]=startVal.split(':').map(Number);
   const startTotalMin=sh*60+sm;
   const totalMin=simTasks.reduce((s,t)=>s+t.durationMin,0);
-  const totalSec=totalMin*60;
+  const boundMin=simTasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
+  const totalSec=boundMin*60;
   const driveMin=simTasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
   let cont=0,maxCont=0,breakAcc=0;
   simTasks.forEach(st=>{
@@ -2114,6 +2137,59 @@ function closeSettings(){
   document.getElementById('settings-overlay').classList.remove('on');
 }
 
+// ===== データ書き出し・読み込み =====
+function exportData(){
+  closeSettings();
+  const data={
+    version:'1.5.0',
+    exportedAt:new Date().toISOString(),
+    dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
+    dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
+    dtacho_simplans:JSON.parse(localStorage.getItem('dtacho_simplans')||'{}'),
+    ph_dep:JSON.parse(localStorage.getItem('ph_dep')||'[]'),
+    ph_arrive:JSON.parse(localStorage.getItem('ph_arrive')||'[]'),
+    ph_from:JSON.parse(localStorage.getItem('ph_from')||'[]'),
+    ph_to:JSON.parse(localStorage.getItem('ph_to')||'[]'),
+    ph_single:JSON.parse(localStorage.getItem('ph_single')||'[]'),
+  };
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const d=new Date();
+  const fname=`selmane_backup_${d.getFullYear()}${p2(d.getMonth()+1)}${p2(d.getDate())}.json`;
+  const a=document.createElement('a');a.href=url;a.download=fname;a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.dtacho_simplans&&!data.dtacho_logs){
+        alert('SELMANEのデータファイルではないようです');return;
+      }
+      if(!confirm('現在のデータを上書きしてよろしいですか？\n（既存のデータは消えます）'))return;
+      if(data.dtacho_logs)localStorage.setItem('dtacho_logs',JSON.stringify(data.dtacho_logs));
+      if(data.dtacho_meta)localStorage.setItem('dtacho_meta',JSON.stringify(data.dtacho_meta));
+      if(data.dtacho_simplans)localStorage.setItem('dtacho_simplans',JSON.stringify(data.dtacho_simplans));
+      if(data.ph_dep)localStorage.setItem('ph_dep',JSON.stringify(data.ph_dep));
+      if(data.ph_arrive)localStorage.setItem('ph_arrive',JSON.stringify(data.ph_arrive));
+      if(data.ph_from)localStorage.setItem('ph_from',JSON.stringify(data.ph_from));
+      if(data.ph_to)localStorage.setItem('ph_to',JSON.stringify(data.ph_to));
+      if(data.ph_single)localStorage.setItem('ph_single',JSON.stringify(data.ph_single));
+      // 再読み込みして反映
+      location.reload();
+    }catch(err){
+      alert('ファイルの読み込みに失敗しました');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+  closeSettings();
+}
+
 // ===== 週間レポートPDF出力 =====
 function exportWeekPDF(){
   closeSettings();
@@ -2132,7 +2208,7 @@ function exportWeekPDF(){
     const dk=simDayKey(d);
     const plan=simPlans[dk]||{tasks:[],startTime:'08:00'};
     const tasks=plan.tasks||[];
-    const totalMin=tasks.reduce((s,t)=>s+t.durationMin,0);
+    const totalMin=tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
     const driveMin=tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
     let cont=0,maxCont=0,breakAcc=0;
     tasks.forEach(st=>{
