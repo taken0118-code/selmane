@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.3.0</title>
+<title>SELMANE v1.4.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -449,7 +449,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.3.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.4.1</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -721,11 +721,16 @@ function calcStats(tl,departMs){
   const totalSec=Math.round((Math.max(lastEnd,departMs?Date.now():lastEnd)-startMs)/1000);
   const driveSec=tl.filter(l=>taskById(l.taskId)?.isDrive).reduce((s,l)=>s+l.durationSec,0);
   const sorted=[...tl].sort((a,b)=>a.startMs-b.startMs);
-  let cont=0,maxCont=0;
+  let cont=0,maxCont=0,breakAcc=0;
   for(const l of sorted){
     const t=taskById(l.taskId);
-    if(t?.isDrive){cont+=l.durationSec;}
-    else if(l.durationSec>=1800){cont=0;}
+    if(t?.isDrive){
+      if(breakAcc>=1800){cont=0;breakAcc=0;}
+      cont+=l.durationSec;breakAcc=0;
+    } else {
+      breakAcc+=l.durationSec;
+      if(breakAcc>=1800){cont=0;breakAcc=0;}
+    }
     if(cont>maxCont)maxCont=cont;
   }
   return{totalSec,driveSec,contDriveSec:maxCont};
@@ -1350,6 +1355,7 @@ function simRenderList(){
       <div class="sdur" style="color:${t.color}">${fmtDur(st.durationMin*60)}</div>
       <button class="srem" onclick="event.stopPropagation();simRemove(${i})">✕</button>
       <div class="srow-edit-area" id="edit-area-${i}">
+        <div class="sif-tasks" style="margin-bottom:8px">${TASKS.map(tk=>`<button class="sif-btn${tk.id===st.taskId?' sel':''}" ${tk.id===st.taskId?`style="border-color:${tk.color}"`:''}  onclick="event.stopPropagation();edChangeTask(${i},'${tk.id}','${tk.color}')"><span class="sif-icon">${tk.icon}</span>${tk.name}</button>`).join('')}</div>
         <div class="srow-edit-top">
           <div class="srow-drum-wrap">
             <div class="srow-drum" id="ed-h-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-hi-${i}"></div></div>
@@ -1357,10 +1363,12 @@ function simRenderList(){
             <div class="srow-drum" id="ed-m-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-mi-${i}"></div></div>
             <span class="srow-unit">m</span>
           </div>
+          <div id="ed-place-area-${i}">
           ${isDrive?`
           <input class="srow-place-input" id="ed-from-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}">
           <input class="srow-place-input" id="ed-to-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">
           `:`<input class="srow-place-input" id="ed-place-${i}" placeholder="📍 場所" value="${st.place||''}">`}
+          </div>
         </div>
         <div class="srow-edit-btns">
           <button class="srow-save-btn" onclick="event.stopPropagation();simSaveEdit(${i})">✔ 更新</button>
@@ -1401,6 +1409,26 @@ function simRenderList(){
 }
 
 let editingIdx = -1;
+const rowEditTask={};
+
+function edChangeTask(i,tid,color){
+  rowEditTask[i]=tid;
+  const area=document.getElementById(`edit-area-${i}`);
+  if(!area)return;
+  area.querySelectorAll('.sif-btn').forEach(b=>{b.classList.remove('sel');b.style.borderColor='';});
+  const sel=area.querySelector(`.sif-btn[onclick*="'${tid}'"]`);
+  if(sel){sel.classList.add('sel');sel.style.borderColor=color;}
+  // 場所欄を切り替え
+  const isDrive=taskById(tid)?.isDrive;
+  const pa=document.getElementById(`ed-place-area-${i}`);
+  if(!pa)return;
+  const st=simTasks[i];
+  if(isDrive){
+    pa.innerHTML=`<input class="srow-place-input" id="ed-from-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}"><input class="srow-place-input" id="ed-to-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">`;
+  } else {
+    pa.innerHTML=`<input class="srow-place-input" id="ed-place-${i}" placeholder="📍 場所" value="${st.place||''}">`;
+  }
+}
 
 function simToggleEdit(i){
   const rows=document.querySelectorAll('.srow');
@@ -1419,16 +1447,18 @@ function simToggleEdit(i){
 function simCancelEdit(i){
   const rows=document.querySelectorAll('.srow');
   if(rows[i])rows[i].classList.remove('editing');
+  delete rowEditTask[i];
   editingIdx=-1;
 }
 
 function simSaveEdit(i){
-  const st=simTasks[i];
-  const t=taskById(st.taskId);
-  const h=rowDrumVals[`${i}-h`]??Math.floor(st.durationMin/60);
-  const m=rowDrumVals[`${i}-m`]??st.durationMin%60;
+  const newTaskId=rowEditTask[i]||simTasks[i].taskId;
+  const t=taskById(newTaskId);
+  const h=rowDrumVals[`${i}-h`]??Math.floor(simTasks[i].durationMin/60);
+  const m=rowDrumVals[`${i}-m`]??simTasks[i].durationMin%60;
   const newMin=h*60+m;
   if(newMin<=0){alert('時間を設定してな！');return;}
+  simTasks[i].taskId=newTaskId;
   simTasks[i].durationMin=newMin;
   if(t?.isDrive){
     simTasks[i].placeFrom=(document.getElementById(`ed-from-${i}`)?.value||'').trim();
@@ -1438,8 +1468,10 @@ function simSaveEdit(i){
     if(simTasks[i].placeTo)recordPlace('ph_to',simTasks[i].placeTo);
   } else {
     simTasks[i].place=(document.getElementById(`ed-place-${i}`)?.value||'').trim();
+    simTasks[i].placeFrom='';simTasks[i].placeTo='';
     if(simTasks[i].place)recordPlace('ph_single',simTasks[i].place);
   }
+  delete rowEditTask[i];
   editingIdx=-1;
   simUpdate();
 }
@@ -1766,11 +1798,16 @@ function simUpdate(){
   const totalMin=simTasks.reduce((s,t)=>s+t.durationMin,0);
   const totalSec=totalMin*60;
   const driveMin=simTasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
-  let cont=0,maxCont=0;
+  let cont=0,maxCont=0,breakAcc=0;
   simTasks.forEach(st=>{
     const t=taskById(st.taskId);
-    if(t?.isDrive){cont+=st.durationMin;}
-    else if(st.durationMin>=30){cont=0;}
+    if(t?.isDrive){
+      if(breakAcc>=30){cont=0;breakAcc=0;}
+      cont+=st.durationMin;breakAcc=0;
+    } else {
+      breakAcc+=st.durationMin;
+      if(breakAcc>=30){cont=0;breakAcc=0;}
+    }
     if(cont>maxCont)maxCont=cont;
   });
   const endTotalMin=startTotalMin+totalMin;
@@ -2097,10 +2134,16 @@ function exportWeekPDF(){
     const tasks=plan.tasks||[];
     const totalMin=tasks.reduce((s,t)=>s+t.durationMin,0);
     const driveMin=tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
-    let cont=0,maxCont=0;
+    let cont=0,maxCont=0,breakAcc=0;
     tasks.forEach(st=>{
       const t=taskById(st.taskId);
-      if(t?.isDrive){cont+=st.durationMin;}else if(st.durationMin>=30){cont=0;}
+      if(t?.isDrive){
+        if(breakAcc>=30){cont=0;breakAcc=0;}
+        cont+=st.durationMin;breakAcc=0;
+      } else {
+        breakAcc+=st.durationMin;
+        if(breakAcc>=30){cont=0;breakAcc=0;}
+      }
       if(cont>maxCont)maxCont=cont;
     });
     weekDriveMins+=driveMin; weekBoundMins+=totalMin;
