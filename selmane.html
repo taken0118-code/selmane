@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.8.0</title>
+<title>SELMANE v1.8.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -468,7 +468,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.8.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.8.1</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -1939,9 +1939,9 @@ function simUpdate(){
   const prevPlan2=simPlans[simDayKey(prevDay2)];
   const hasPrev2=prevPlan2&&prevPlan2.tasks.length>0;
   const prevDriveMin2=hasPrev2?prevPlan2.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
-  const maxDrive2=hasPrev2?Math.max(0,18*60-prevDriveMin2):9*60;
-  const driveRemain2=Math.max(0,maxDrive2-driveMin);
-  document.getElementById('ss-rdrive').textContent=fmtHM(driveRemain2*60);
+  const maxDrive2=hasPrev2?18*60-prevDriveMin2:9*60;
+  const driveRemain2=maxDrive2-driveMin;
+  document.getElementById('ss-rdrive').textContent=driveRemain2>=0?fmtHM(driveRemain2*60):'-'+fmtHM(Math.abs(driveRemain2)*60);
   document.getElementById('ss-rdrive').style.color=driveRemain2<=0?'var(--over)':driveRemain2<=60?'var(--warn)':'var(--blue)';
 
   const bar=document.getElementById('sim-tl-bar');
@@ -2010,15 +2010,10 @@ function simUpdate(){
   const avg2worst=Math.max(avg2prev,avg2next);
   const avg2ok=avg2worst<=9*60;
   const avg2both=avg2prev>9*60&&avg2next>9*60;
-  // 当日の運転可能時間（前日ベース：2日平均が9h以内になる上限）
-  const hasPrev=prevPlan&&prevPlan.tasks.length>0;
-  const maxDriveToday=hasPrev?Math.max(0,18*60-prevDriveMin):9*60;
-  const driveRemain=Math.max(0,maxDriveToday-driveMin);
 
   const checkList=[
     {label:'拘束時間（上限13h/最大15h）',val:fmtHM(totalSec),ok:totalSec<=13*3600,warn:totalSec>13*3600&&totalSec<=15*3600,msg:isOver?'15h超過！法令違反':isWarn?'13h超過（原則違反）':'適正'},
     {label:'運転時間（2日平均9h以内）',val:fmtHM(driveMin*60),ok:avg2ok,warn:!avg2ok&&!avg2both,msg:avg2both?'前後とも9h超！違反':!avg2ok?'前日平均'+fmtHM(avg2prev*60)+'（注意）':'適正'},
-    {label:'本日の運転可能残',val:fmtHM(driveRemain*60),ok:driveRemain>60,warn:driveRemain>0&&driveRemain<=60,msg:hasPrev?(driveRemain<=0?'上限到達':'前日'+fmtHM(prevDriveMin*60)+'→上限'+fmtHM(maxDriveToday*60)):'前日データなし（9h目安）'},
     {label:'最大連続運転（4h以内）',val:fmtHM(maxCont*60),ok:maxCont<=240,warn:false,msg:maxCont>240?'4h超過！要休憩':'適正'},
   ];
   checkList.forEach(c=>{
