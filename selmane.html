@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.8.1</title>
+<title>SELMANE v1.9.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -195,6 +195,9 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .sim-result{background:var(--s1);border-radius:14px;padding:13px 15px;margin-bottom:11px;border:1px solid var(--border);display:none}
 .sim-result.on{display:block}
 .sim-result.ok-c{border-color:var(--ok)}.sim-result.warn-c{border-color:var(--warn)}.sim-result.over-c{border-color:var(--over)}
+.sim-result.confirmed-ok{border-color:var(--blue);border-width:3px}
+.sim-result.confirmed-warn{border-color:var(--warn);border-width:3px}
+.sim-result.confirmed-over{border-color:var(--over);border-width:3px}
 .srt{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;margin-bottom:10px}
 .sim-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:11px}
 .ssb{text-align:center}
@@ -468,7 +471,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.8.1</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.9.0</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -584,7 +587,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <div class="sim-stats">
       <div class="ssb"><div class="ssl">拘束時間</div><div class="ssv" id="ss-total">--</div></div>
       <div class="ssb"><div class="ssl">運転時間</div><div class="ssv" id="ss-drive">--</div></div>
-      <div class="ssb"><div class="ssl">終了予定</div><div class="ssv" id="ss-end">--</div></div>
+      <div class="ssb"><div class="ssl" id="ss-end-label">終了予定</div><div class="ssv" id="ss-end">--</div></div>
     </div>
     <div class="sim-stats" id="ss-odo-row" style="display:none">
       <div class="ssb"><div class="ssl">出庫距離</div><div class="ssv" id="ss-odo-start" style="color:var(--muted)">--</div></div>
@@ -684,11 +687,14 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
       <label>📍 帰庫場所</label>
       <input type="text" class="place-input" id="sim-arrive-place" placeholder="帰庫地点（任意）" oninput="saveCurrentSimDay()">
     </div>
-    <div class="sim-place-row" style="margin-bottom:0">
+    <div class="sim-place-row">
       <label>🔢 帰庫距離</label>
       <input type="number" class="place-input" id="sim-odo-end" placeholder="オドメーター（km）" style="width:140px;font-family:'DM Mono',monospace" oninput="simUpdate();saveCurrentSimDay()">
       <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">km</span>
     </div>
+    <button id="confirm-btn" onclick="confirmDay()" style="width:100%;margin-top:10px;background:rgba(0,212,255,.15);border:2px solid var(--c-depart);border-radius:10px;padding:12px;color:var(--c-depart);font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer">✔ 帰庫確定</button>
+    <div id="confirmed-badge" style="display:none;text-align:center;padding:10px;margin-top:10px;border-radius:10px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif">✔ 確定済み</div>
+    <button id="unconfirm-btn" onclick="unconfirmDay()" style="display:none;width:100%;margin-top:6px;background:none;border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--muted);font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer">確定を取り消す</button>
   </div>
 </div><!-- /sim-section -->
 
@@ -1889,6 +1895,27 @@ function openGoogleMap(){
   window.open(url,'_blank');
 }
 
+function confirmDay(){
+  if(!simTasks.length){alert('タスクがないで！');return;}
+  const dk=simDayKey(currentSimDate);
+  const plan=simPlans[dk]||{};
+  plan.confirmed=true;
+  simPlans[dk]=plan;
+  saveSimPlans();
+  simUpdate();
+  renderWeekNav();
+}
+
+function unconfirmDay(){
+  const dk=simDayKey(currentSimDate);
+  const plan=simPlans[dk]||{};
+  plan.confirmed=false;
+  simPlans[dk]=plan;
+  saveSimPlans();
+  simUpdate();
+  renderWeekNav();
+}
+
 function simUpdate(){
   simRenderTaskBtns();
   simRenderList();
@@ -2022,6 +2049,39 @@ function simUpdate(){
     row.innerHTML=`<div class="scl">${c.label}</div><div class="scrr"><div class="scv">${c.val}</div><div class="sbadge ${badge}">${c.msg}</div></div>`;
     checks.appendChild(row);
   });
+
+  // 確定状態の反映
+  const dk=simDayKey(currentSimDate);
+  const isConfirmed=simPlans[dk]?.confirmed;
+  const confirmBtn=document.getElementById('confirm-btn');
+  const confirmedBadge=document.getElementById('confirmed-badge');
+  const unconfirmBtn=document.getElementById('unconfirm-btn');
+  if(isConfirmed){
+    // 確定済み：リザルト枠の色を判定
+    // 翌日に注意が必要（2日平均で翌日に影響）= warn、違反あり = over、問題なし = blue
+    const hasViolation=isOver||(avg2prev>9*60&&avg2next>9*60)||maxCont>240;
+    const needsAttention=isWarn||(!avg2ok)||driveMin>9*60;
+    const confirmedClass=hasViolation?'confirmed-over':needsAttention?'confirmed-warn':'confirmed-ok';
+    result.className='sim-result on '+confirmedClass;
+    document.getElementById('srt').textContent='CONFIRMED RESULT'+(hasViolation?' — 🚨 違反あり':needsAttention?' — ⚠ 翌日注意':' — ✅ 問題なし');
+    // 終了予定→終了時間
+    document.getElementById('sim-end-time').innerHTML=
+      '終了時間: '+endTimeStr+' （'+fmtHM(totalSec)+'）'+
+      '<span style="margin-left:10px;color:var(--muted);font-size:9px">（翌日始業可能 '+nextStartStr+'〜）</span>';
+    // ボタン切り替え
+    confirmBtn.style.display='none';
+    confirmedBadge.style.display='block';
+    confirmedBadge.style.background=hasViolation?'rgba(231,76,60,.15)':needsAttention?'rgba(243,156,18,.15)':'rgba(52,152,219,.15)';
+    confirmedBadge.style.color=hasViolation?'var(--over)':needsAttention?'var(--warn)':'var(--blue)';
+    confirmedBadge.textContent='✔ 確定済み — '+endTimeStr+' 帰庫';
+    unconfirmBtn.style.display='block';
+    document.getElementById('ss-end-label').textContent='終了時間';
+  } else {
+    confirmBtn.style.display='block';
+    confirmedBadge.style.display='none';
+    unconfirmBtn.style.display='none';
+    document.getElementById('ss-end-label').textContent='終了予定';
+  }
 }
 
 // ===== オープニング =====
