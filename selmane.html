@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.9.0</title>
+<title>SELMANE v1.9.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -471,7 +471,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.9.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.9.1</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -1209,13 +1209,15 @@ function saveCurrentSimDay(){
   const apEl = document.getElementById('sim-arrive-place');
   const osEl = document.getElementById('sim-odo-start');
   const oeEl = document.getElementById('sim-odo-end');
+  const existing = simPlans[dk]||{};
   simPlans[dk] = {
     tasks: simTasks.map(t=>({...t})),
     startTime: startEl?startEl.value:'08:00',
     departPlace: dpEl?dpEl.value:'',
     arrivePlace: apEl?apEl.value:'',
     odoStart: osEl?osEl.value:'',
-    odoEnd: oeEl?oeEl.value:''
+    odoEnd: oeEl?oeEl.value:'',
+    confirmed: existing.confirmed||false
   };
   // 地点履歴を記録
   const dpVal=(dpEl?dpEl.value:'').trim();
@@ -1920,7 +1922,14 @@ function simUpdate(){
   simRenderTaskBtns();
   simRenderList();
   saveCurrentSimDay();
-  if(!simTasks.length){document.getElementById('sim-result').className='sim-result';return;}
+  if(!simTasks.length){
+    document.getElementById('sim-result').className='sim-result';
+    document.getElementById('confirm-btn').style.display='block';
+    document.getElementById('confirmed-badge').style.display='none';
+    document.getElementById('unconfirm-btn').style.display='none';
+    document.getElementById('ss-end-label').textContent='終了予定';
+    return;
+  }
 
   const startVal=document.getElementById('sim-start').value||'08:00';
   const [sh,sm]=startVal.split(':').map(Number);
@@ -2314,7 +2323,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.5.0',
+    version:'1.9.1',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
