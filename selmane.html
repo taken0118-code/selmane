@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.9.1</title>
+<title>SELMANE v1.10.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .gauge-wrap{position:relative;height:13px;background:var(--border);border-radius:99px;overflow:visible;margin-bottom:5px}
 .gauge-fill{height:100%;border-radius:99px;transition:width .4s,background .3s;max-width:100%}
 .gm{position:absolute;top:-3px;width:2px;height:19px;border-radius:1px;z-index:2}
-.gm13{background:rgba(243,156,18,.8)}.gm15{background:rgba(231,76,60,.8)}
+.gm13{background:rgba(243,156,18,.8)}.gm15{background:rgba(231,76,60,.8)}.gm16{background:rgba(180,0,0,.7)}
 .gauge-labels{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted)}
 
 /* アラート */
@@ -65,7 +65,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .tl-bar{height:26px;border-radius:7px;background:var(--border);position:relative;overflow:hidden;margin-bottom:9px}
 .tl-seg{position:absolute;top:0;height:100%}
 .tvl{position:absolute;top:0;width:2px;height:100%;z-index:5;pointer-events:none}
-.tvl13{background:rgba(243,156,18,.75)}.tvl15{background:rgba(231,76,60,.75)}
+.tvl13{background:rgba(243,156,18,.75)}.tvl15{background:rgba(231,76,60,.75)}.tvl16{background:rgba(180,0,0,.6)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 10px}
 .li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);font-family:'DM Mono',monospace}
 .ld{width:9px;height:9px;border-radius:2px;flex-shrink:0}
@@ -206,7 +206,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .sim-tl-bar{height:22px;border-radius:6px;background:var(--border);position:relative;overflow:hidden;margin:9px 0 4px}
 .stlseg{position:absolute;top:0;height:100%}
 .stlvl{position:absolute;top:0;width:2px;height:100%;z-index:5;pointer-events:none}
-.stlvl13{background:rgba(243,156,18,.75)}.stlvl15{background:rgba(231,76,60,.75)}
+.stlvl13{background:rgba(243,156,18,.75)}.stlvl15{background:rgba(231,76,60,.75)}.stlvl16{background:rgba(180,0,0,.6)}
 .sim-tl-axis{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:3px;padding:0 1px}
 .sim-end-time{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);text-align:right;margin-top:4px}
 /* 週間ナビ */
@@ -471,7 +471,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.9.1</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.10.0</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -495,17 +495,20 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     </div>
     <div class="gauge-wrap">
       <div class="gauge-fill" id="gauge-fill" style="width:0%;background:var(--ok)"></div>
-      <div class="gm gm13" style="left:86.67%"></div>
-      <div class="gm gm15" style="left:99%"></div>
+      <div class="gm gm13" style="left:81.25%"></div>
+      <div class="gm gm15" style="left:93.75%"></div>
     </div>
     <div class="gauge-labels">
       <span id="g-start">--:--</span>
       <span style="color:var(--warn)">⚠ 13h</span>
       <span style="color:var(--over)">🚨 15h</span>
+      <span style="color:var(--over);opacity:.6">16h</span>
     </div>
   </div>
 
-  <div class="alert a-over" id="alert-over">🚨 拘束時間が<strong>15時間を超過</strong>！直ちに業務を終了し休息を取ってください。</div>
+  <div class="alert a-over" id="alert-over16">🚨 拘束時間が<strong>16時間を超過</strong>！法令違反です。直ちに業務を終了してください。</div>
+  <div class="alert a-over" id="alert-over">🚨 拘束時間が<strong>15時間を超過</strong>、かつ今週の16h特例枠（週2回）が上限です。直ちに業務を終了してください。</div>
+  <div class="alert a-warn" id="alert-16special">⚡ 拘束<strong>15時間超過</strong>（16h特例適用中）。残り<span id="special-remain">--</span>で16時間になります。今週の特例使用: <span id="special-count">-</span>/2回</div>
   <div class="alert a-warn" id="alert-warn">⚠ 拘束時間が<strong>13時間を超過</strong>（原則上限）。残り<span id="warn-remain">--</span>で15時間になります。</div>
   <div class="alert a-drv" id="alert-drive">⏱ 連続運転が<strong>3時間30分</strong>超。4時間以内に30分以上の休憩が必要です。</div>
 
@@ -525,6 +528,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <div class="tl-bar" id="tl-bar">
       <div class="tvl tvl13" id="tvl13" style="display:none"></div>
       <div class="tvl tvl15" id="tvl15" style="display:none"></div>
+      <div class="tvl tvl16" id="tvl16" style="display:none"></div>
     </div>
     <div class="legend" id="legend"></div>
   </div>
@@ -599,10 +603,16 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
       <div class="ssb"><div class="ssl">15hまで残り</div><div class="ssv" id="ss-r15" style="color:var(--ok)">--</div></div>
       <div class="ssb"><div class="ssl">運転可能残</div><div class="ssv" id="ss-rdrive" style="color:var(--blue)">--</div></div>
     </div>
+    <div class="sim-stats" id="ss-16h-row">
+      <div class="ssb"><div class="ssl">16hまで残り</div><div class="ssv" id="ss-r16" style="color:var(--ok)">--</div></div>
+      <div class="ssb"><div class="ssl">16h特例</div><div class="ssv" id="ss-special" style="color:var(--muted)">--</div></div>
+      <div class="ssb"><div class="ssl">特例残り</div><div class="ssv" id="ss-special-remain" style="color:var(--ok)">--</div></div>
+    </div>
     <div class="sim-tl-axis" id="sim-tl-axis"></div>
     <div class="sim-tl-bar" id="sim-tl-bar">
       <div class="stlvl stlvl13" id="stlvl13" style="display:none"></div>
       <div class="stlvl stlvl15" id="stlvl15" style="display:none"></div>
+      <div class="stlvl stlvl16" id="stlvl16" style="display:none"></div>
     </div>
     <div class="sim-end-time" id="sim-end-time"></div>
     <div class="legend" id="sim-legend" style="margin-top:8px"></div>
@@ -782,29 +792,46 @@ function updateStatus(){
   const {totalSec,driveSec,contDriveSec}=calcStats(tl,meta.departMs);
   const r13=Math.max(0,13*3600-totalSec);
   const r15=Math.max(0,15*3600-totalSec);
+  const r16=Math.max(0,16*3600-totalSec);
   const rDrv=Math.max(0,4*3600-contDriveSec);
 
+  // 16h特例判定
+  const weekReal15h=countWeekReal15hOverDays();
+  const todayOver15=totalSec>15*3600;
+  const totalWeek15h=weekReal15h+(todayOver15?1:0);
+  const specialAvail=totalWeek15h<=2;
+  const isOver16=totalSec>16*3600;
+  const is15to16=totalSec>15*3600&&totalSec<=16*3600;
+  const isRealOver=isOver16||(is15to16&&!specialAvail);
+  const isSpecial=is15to16&&specialAvail;
+
   function cls(s,t1,t2){return s>=t2?'over':s>=t1?'warn':'ok'}
-  setEl('val-total',fmtDur(totalSec),'rv '+cls(totalSec,13*3600,15*3600));
+  setEl('val-total',fmtDur(totalSec),'rv '+(isRealOver?'over':isSpecial?'warn':cls(totalSec,13*3600,15*3600)));
   setEl('val-r13',r13>0?fmtHM(r13):'超過','rv '+(r13<=0?'over':r13<3600?'warn':'ok'));
   setEl('val-r15',r15>0?fmtHM(r15):'超過','rv '+(r15<=0?'over':r15<3600?'warn':'ok'));
   setEl('val-drive',fmtDur(driveSec),'rv blue');
   setEl('val-cont',fmtDur(contDriveSec),'rv '+cls(contDriveSec,3.5*3600,4*3600));
   setEl('val-rdrv',rDrv>0?fmtHM(rDrv):'休憩！','rv '+(rDrv<=0?'over':rDrv<1800?'warn':'ok'));
 
-  const pct=Math.min(100,(totalSec/(15*3600))*100);
+  const pct=Math.min(100,(totalSec/(16*3600))*100);
   const gf=document.getElementById('gauge-fill');
   gf.style.width=pct+'%';
-  gf.style.background=totalSec>=15*3600?'var(--over)':totalSec>=13*3600?'var(--warn)':'var(--ok)';
+  gf.style.background=isRealOver?'var(--over)':isSpecial?'#d35400':totalSec>=13*3600?'var(--warn)':'var(--ok)';
   if(meta.departMs)document.getElementById('g-start').textContent='出庫 '+fmtTime(new Date(meta.departMs));
 
   const card=document.getElementById('remain-card');
-  card.className='remain-card'+(totalSec>=15*3600?' over':totalSec>=13*3600?' warn':'');
-  tog('alert-over',totalSec>15*3600);
+  card.className='remain-card'+(isRealOver?' over':totalSec>=13*3600?' warn':'');
+  tog('alert-over16',isOver16);
+  tog('alert-over',!isOver16&&is15to16&&!specialAvail);
+  tog('alert-16special',isSpecial);
   tog('alert-warn',totalSec>13*3600&&totalSec<=15*3600);
   tog('alert-drive',contDriveSec>=3.5*3600);
   if(totalSec>13*3600&&totalSec<=15*3600)
     document.getElementById('warn-remain').textContent=fmtHM(r15);
+  if(isSpecial){
+    document.getElementById('special-remain').textContent=fmtHM(r16);
+    document.getElementById('special-count').textContent=totalWeek15h;
+  }
 }
 
 function setEl(id,text,cls){const el=document.getElementById(id);if(!el)return;el.textContent=text;if(cls)el.className=cls}
@@ -819,12 +846,12 @@ function renderTimeline(){
   const legend=document.getElementById('legend');
   bar.querySelectorAll('.tl-seg').forEach(e=>e.remove());
   axis.innerHTML='';legend.innerHTML='';
-  document.getElementById('tvl13').style.display=document.getElementById('tvl15').style.display='none';
+  document.getElementById('tvl13').style.display=document.getElementById('tvl15').style.display=document.getElementById('tvl16').style.display='none';
   const startMs=meta.departMs||(tl.length?tl[0].startMs:null);
   if(!startMs){document.getElementById('tl-start-lbl').textContent='';return;}
   document.getElementById('tl-start-lbl').textContent='出庫 '+fmtTime(new Date(startMs));
-  const spanMs=15*3600*1000;
-  for(let h=0;h<=15;h+=3){const sp=document.createElement('span');sp.textContent=fmtTime(new Date(startMs+h*3600*1000));axis.appendChild(sp);}
+  const spanMs=16*3600*1000;
+  for(let h=0;h<=16;h+=4){const sp=document.createElement('span');sp.textContent=fmtTime(new Date(startMs+h*3600*1000));axis.appendChild(sp);}
   [...tl].sort((a,b)=>a.startMs-b.startMs).forEach(l=>{
     const t=taskById(l.taskId);if(!t)return;
     const seg=document.createElement('div');seg.className='tl-seg';
@@ -834,8 +861,9 @@ function renderTimeline(){
     seg.title=`${t.name} ${l.startStr}〜${l.endStr} ${fmtDur(l.durationSec)}`;
     bar.appendChild(seg);
   });
-  document.getElementById('tvl13').style.left=(13/15*100)+'%';document.getElementById('tvl13').style.display='block';
-  document.getElementById('tvl15').style.left='99%';document.getElementById('tvl15').style.display='block';
+  document.getElementById('tvl13').style.left=(13/16*100)+'%';document.getElementById('tvl13').style.display='block';
+  document.getElementById('tvl15').style.left=(15/16*100)+'%';document.getElementById('tvl15').style.display='block';
+  document.getElementById('tvl16').style.left='99%';document.getElementById('tvl16').style.display='block';
   const used={};[...tl].forEach(l=>{used[l.taskId]=(used[l.taskId]||0)+l.durationSec;});
   TASKS.forEach(t=>{if(!used[t.id])return;
     const item=document.createElement('div');item.className='li';
@@ -908,10 +936,11 @@ function renderWeek(){
       });
     }
     bw.appendChild(bi);
-    const p13=(13*3600/maxSec*100);const p15=(15*3600/maxSec*100);
+    const p13=(13*3600/maxSec*100);const p15=(15*3600/maxSec*100);const p16=(16*3600/maxSec*100);
     if(p13<=100){const m=document.createElement('div');m.className='wmk wmk13';m.style.left=p13+'%';bw.appendChild(m);}
     if(p15<=100){const m=document.createElement('div');m.className='wmk wmk15';m.style.left=p15+'%';bw.appendChild(m);}
-    const tcls=r.totalSec>=15*3600?'over':r.totalSec>=13*3600?'warn':'ok';
+    if(p16<=100){const m=document.createElement('div');m.className='wmk';m.style.left=p16+'%';m.style.background='rgba(180,0,0,.7)';bw.appendChild(m);}
+    const tcls=r.totalSec>=16*3600?'over':r.totalSec>=13*3600?'warn':'ok';
     const tl2=document.createElement('div');tl2.className='wtm'+(r.totalSec>0?' '+tcls:'');
     tl2.textContent=r.totalSec>0?fmtHM(r.totalSec):'—';
     row.appendChild(dl);row.appendChild(bw);row.appendChild(tl2);container.appendChild(row);
@@ -1022,7 +1051,7 @@ function saveReport(){
   if(meta.departMs)txt+=`出庫時刻:       ${fmtTime(new Date(meta.departMs))}\n`;
   if(meta.arriveMs)txt+=`帰庫時刻:       ${fmtTime(new Date(meta.arriveMs))}\n`;
   txt+=`拘束時間:       ${fmtDur(totalSec)}\n運転時間:       ${fmtDur(driveSec)}\n最大連続運転:   ${fmtDur(contDriveSec)}\n`;
-  txt+=totalSec>15*3600?'【超過】拘束15h超過！\n':totalSec>13*3600?'【注意】拘束13h超過\n':'【適正】拘束13h以内\n';
+  txt+=totalSec>16*3600?'【超過】拘束16h超過！法令違反\n':totalSec>15*3600?'【注意】拘束15h超過（16h特例適用）\n':totalSec>13*3600?'【注意】拘束13h超過\n':'【適正】拘束13h以内\n';
   txt+='━'.repeat(20)+'\n■ 作業記録\n';
   tl.forEach(l=>{const t=taskById(l.taskId);txt+=`${l.startStr}〜${l.endStr}  [${t?.name}]  ${fmtDur(l.durationSec)}${l.memo?'  ／ '+l.memo:''}\n`;});
   txt+='━'.repeat(20)+'\n■ 作業別集計\n';
@@ -1104,10 +1133,11 @@ function renderWeekNav(){
     if(isToday) cls += ' today';
     if(isActive) cls += ' active';
     if(plan && plan.tasks.length) cls += ' has-data';
-    if(totalMin > 15*60) cls += ' over-day';
+    if(totalMin > 16*60) cls += ' over-day';
+    else if(totalMin > 15*60) cls += ' warn-day';
     else if(totalMin > 13*60) cls += ' warn-day';
     btn.className = cls;
-    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${totalMin>15*60?'var(--over)':totalMin>13*60?'var(--warn)':totalMin>0?'var(--ok)':'var(--muted)'}">${totalMin>0?fmtHM(totalMin*60):'--'}</span>`;
+    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${totalMin>16*60?'var(--over)':totalMin>13*60?'var(--warn)':totalMin>0?'var(--ok)':'var(--muted)'}">${totalMin>0?fmtHM(totalMin*60):'--'}</span>`;
     btn.onclick = ()=>{ currentSimDate=new Date(d); loadSimDay(dk); renderWeekNav(); };
     container.appendChild(btn);
   }
@@ -1116,6 +1146,19 @@ function renderWeekNav(){
   const prev7DriveMins = calcPrev7DriveMins(mon);
   const twoWeekDriveAvg = (weekDriveMins + prev7DriveMins) / 2;
   const monthBoundMins = calcMonthBoundMins();
+
+  // 週内の15h超え日数カウント
+  let week15hCount=0;
+  for(let j=0;j<7;j++){
+    const wd=new Date(mon);wd.setDate(mon.getDate()+j);
+    const wdk=simDayKey(wd);
+    const wp=simPlans[wdk];
+    if(wp&&wp.tasks.length){
+      const wb=wp.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
+      if(wb>15*60)week15hCount++;
+    }
+  }
+  const specialOk=week15hCount<=2;
 
   const row = document.getElementById('week-compliance-row');
   const driveOk = weekDriveMins <= 44*60;
@@ -1129,9 +1172,9 @@ function renderWeekNav(){
       <div class="wc-badge" style="color:${driveOk?'var(--ok)':'var(--over)'}">${driveOk?'44h以内 ✓':'44h超過!'}</div>
     </div>
     <div class="wcb">
-      <div class="wcl">2週平均運転</div>
-      <div class="wcv ${twoWkOk?'ok':'over'}">${fmtHM(twoWeekDriveAvg*60)}</div>
-      <div class="wc-badge" style="color:${twoWkOk?'var(--ok)':'var(--over)'}">${twoWkOk?'44h以内 ✓':'44h超過!'}</div>
+      <div class="wcl">16h特例</div>
+      <div class="wcv ${specialOk?week15hCount>0?'warn':'ok':'over'}">${week15hCount}/2回</div>
+      <div class="wc-badge" style="color:${specialOk?'var(--ok)':'var(--over)'}">${week15hCount>2?'超過！':week15hCount===2?'上限到達':week15hCount>0?'使用中':'未使用'}</div>
     </div>
     <div class="wcb">
       <div class="wcl">月拘束時間</div>
@@ -1169,6 +1212,47 @@ function calcMonthBoundMins(){
 function shiftWeek(dir){
   weekOffset+=dir;
   renderWeekNav();
+}
+
+// 16h特例: 同週で15h超えの日数をカウント（シミュ用）
+function countWeek15hOverDays(targetDate, excludeSelf){
+  const d=new Date(targetDate);
+  const mon=new Date(d);
+  mon.setDate(d.getDate()-((d.getDay()+6)%7));
+  mon.setHours(0,0,0,0);
+  let count=0;
+  const selfDk=simDayKey(targetDate);
+  for(let i=0;i<7;i++){
+    const wd=new Date(mon);wd.setDate(mon.getDate()+i);
+    const dk=simDayKey(wd);
+    if(excludeSelf && dk===selfDk) continue;
+    const plan=simPlans[dk];
+    if(!plan||!plan.tasks.length) continue;
+    const boundMin=plan.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
+    if(boundMin>15*60) count++;
+  }
+  return count;
+}
+
+// 16h特例: 同週で15h超えの日数をカウント（実績用）
+function countWeekReal15hOverDays(){
+  const today=new Date();
+  const mon=new Date(today);
+  mon.setDate(today.getDate()-((today.getDay()+6)%7));
+  mon.setHours(0,0,0,0);
+  let count=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(mon);d.setDate(mon.getDate()+i);
+    const dk=dayKey(d);
+    if(dk===todayKey()) continue;
+    const meta2=dayMeta[dk];
+    if(!meta2||!meta2.departMs) continue;
+    const tl2=logs.filter(l=>dayKey(new Date(l.startMs))===dk);
+    const endMs=meta2.arriveMs||(tl2.length?Math.max(...tl2.map(l=>l.startMs+l.durationSec*1000)):meta2.departMs);
+    const sec=Math.round((endMs-meta2.departMs)/1000);
+    if(sec>15*3600) count++;
+  }
+  return count;
 }
 
 // 日付切り替え時にその日のプランを読み込む
@@ -1232,7 +1316,7 @@ function saveCurrentSimDay(){
 
 // ドラムロール初期化
 let drumH=1, drumM=0;
-const H_VALS=Array.from({length:16},(_,i)=>i);   // 0〜15h
+const H_VALS=Array.from({length:17},(_,i)=>i);   // 0〜16h
 const M_VALS=[0,5,10,15,20,25,30,35,40,45,50,55]; // 5分刻み
 
 function buildDrum(innerId, vals, current, setter){
@@ -1955,11 +2039,21 @@ function simUpdate(){
   const endTimeStr=`${p2(endH)}:${p2(endM)}`;
 
   const result=document.getElementById('sim-result');
-  const isOver=totalSec>15*3600,isWarn=totalSec>13*3600&&!isOver;
-  result.className='sim-result on'+(isOver?' over-c':isWarn?' warn-c':' ok-c');
-  document.getElementById('srt').textContent='SIMULATION RESULT'+(isOver?' — 🚨 超過あり':isWarn?' — ⚠ 注意あり':' — ✅ 問題なし');
+  // 16h特例判定
+  const week15hOther=countWeek15hOverDays(currentSimDate, true);
+  const thisOver15=boundMin>15*60;
+  const totalWeek15h=week15hOther+(thisOver15?1:0);
+  const specialAvail=totalWeek15h<=2;
+  const isOver16=totalSec>16*3600;
+  const is15to16=totalSec>15*3600&&totalSec<=16*3600;
+  const isRealOver=isOver16||(is15to16&&!specialAvail);
+  const isSpecial=is15to16&&specialAvail;
+  const isWarn=totalSec>13*3600&&totalSec<=15*3600;
+
+  result.className='sim-result on'+(isRealOver?' over-c':isSpecial||isWarn?' warn-c':' ok-c');
+  document.getElementById('srt').textContent='SIMULATION RESULT'+(isRealOver?' — 🚨 超過あり':isSpecial?' — ⚡ 16h特例適用':isWarn?' — ⚠ 注意あり':' — ✅ 問題なし');
   document.getElementById('ss-total').textContent=fmtHM(totalSec);
-  document.getElementById('ss-total').style.color=isOver?'var(--over)':isWarn?'var(--warn)':'var(--ok)';
+  document.getElementById('ss-total').style.color=isRealOver?'var(--over)':isSpecial?'#d35400':isWarn?'var(--warn)':'var(--ok)';
   document.getElementById('ss-drive').textContent=fmtHM(driveMin*60);
   document.getElementById('ss-drive').style.color='var(--blue)';
   document.getElementById('ss-end').textContent=endTimeStr;
@@ -1967,10 +2061,11 @@ function simUpdate(){
   // 残り拘束時間・運転可能残
   const r13=Math.max(0,13*3600-totalSec);
   const r15=Math.max(0,15*3600-totalSec);
+  const r16=Math.max(0,16*3600-totalSec);
   document.getElementById('ss-r13').textContent=r13>0?fmtHM(r13):'超過';
   document.getElementById('ss-r13').style.color=r13<=0?'var(--over)':r13<3600?'var(--warn)':'var(--ok)';
   document.getElementById('ss-r15').textContent=r15>0?fmtHM(r15):'超過';
-  document.getElementById('ss-r15').style.color=r15<=0?'var(--over)':r15<3600?'var(--warn)':'var(--ok)';
+  document.getElementById('ss-r15').style.color=r15<=0?(specialAvail?'#d35400':'var(--over)'):r15<3600?'var(--warn)':'var(--ok)';
   const prevDay2=new Date(currentSimDate);prevDay2.setDate(prevDay2.getDate()-1);
   const prevPlan2=simPlans[simDayKey(prevDay2)];
   const hasPrev2=prevPlan2&&prevPlan2.tasks.length>0;
@@ -1980,9 +2075,18 @@ function simUpdate(){
   document.getElementById('ss-rdrive').textContent=driveRemain2>=0?fmtHM(driveRemain2*60):'-'+fmtHM(Math.abs(driveRemain2)*60);
   document.getElementById('ss-rdrive').style.color=driveRemain2<=0?'var(--over)':driveRemain2<=60?'var(--warn)':'var(--blue)';
 
+  // 16h特例行
+  document.getElementById('ss-r16').textContent=r16>0?fmtHM(r16):'超過';
+  document.getElementById('ss-r16').style.color=r16<=0?'var(--over)':r16<3600?'var(--warn)':'var(--ok)';
+  document.getElementById('ss-special').textContent=totalWeek15h+'/2回';
+  document.getElementById('ss-special').style.color=totalWeek15h>2?'var(--over)':totalWeek15h===2?'var(--warn)':'var(--ok)';
+  const specialRemain=2-week15hOther;
+  document.getElementById('ss-special-remain').textContent=thisOver15?`使用中(残${Math.max(0,specialRemain-1)})`:`${specialRemain}回`;
+  document.getElementById('ss-special-remain').style.color=specialRemain<=0?'var(--over)':specialRemain===1?'var(--warn)':'var(--ok)';
+
   const bar=document.getElementById('sim-tl-bar');
   bar.querySelectorAll('.stlseg').forEach(e=>e.remove());
-  const spanMs=15*3600;let cur=0;
+  const spanMs=16*3600;let cur=0;
   simTasks.forEach(st=>{
     const t=taskById(st.taskId);if(!t)return;
     const seg=document.createElement('div');seg.className='stlseg';
@@ -1992,11 +2096,12 @@ function simUpdate(){
     seg.title=`${t.name}${st.place?' @ '+st.place:''} ${fmtDur(st.durationMin*60)}`;
     bar.appendChild(seg);cur+=st.durationMin*60;
   });
-  document.getElementById('stlvl13').style.left=(13/15*100)+'%';document.getElementById('stlvl13').style.display='block';
-  document.getElementById('stlvl15').style.left='99%';document.getElementById('stlvl15').style.display='block';
+  document.getElementById('stlvl13').style.left=(13/16*100)+'%';document.getElementById('stlvl13').style.display='block';
+  document.getElementById('stlvl15').style.left=(15/16*100)+'%';document.getElementById('stlvl15').style.display='block';
+  document.getElementById('stlvl16').style.left='99%';document.getElementById('stlvl16').style.display='block';
 
   const axis=document.getElementById('sim-tl-axis');axis.innerHTML='';
-  for(let h=0;h<=15;h+=3){
+  for(let h=0;h<=16;h+=4){
     const d2=new Date();d2.setHours(sh,sm,0,0);d2.setMinutes(d2.getMinutes()+h*60);
     const sp=document.createElement('span');sp.textContent=p2(d2.getHours())+':'+p2(d2.getMinutes());axis.appendChild(sp);
   }
@@ -2047,8 +2152,23 @@ function simUpdate(){
   const avg2ok=avg2worst<=9*60;
   const avg2both=avg2prev>9*60&&avg2next>9*60;
 
+  // 拘束時間チェックの判定メッセージ
+  let boundMsg,boundOk,boundWarnFlag;
+  if(isOver16){
+    boundMsg='16h超過！法令違反'; boundOk=false; boundWarnFlag=false;
+  } else if(is15to16&&!specialAvail){
+    boundMsg='15h超過（特例枠なし）'; boundOk=false; boundWarnFlag=false;
+  } else if(isSpecial){
+    boundMsg='特例適用('+totalWeek15h+'/2回)'; boundOk=false; boundWarnFlag=true;
+  } else if(isWarn){
+    boundMsg='13h超過（原則違反）'; boundOk=false; boundWarnFlag=true;
+  } else {
+    boundMsg='適正'; boundOk=true; boundWarnFlag=false;
+  }
+
   const checkList=[
-    {label:'拘束時間（上限13h/最大15h）',val:fmtHM(totalSec),ok:totalSec<=13*3600,warn:totalSec>13*3600&&totalSec<=15*3600,msg:isOver?'15h超過！法令違反':isWarn?'13h超過（原則違反）':'適正'},
+    {label:'拘束時間（13h/15h/特例16h）',val:fmtHM(totalSec),ok:boundOk,warn:boundWarnFlag,msg:boundMsg},
+    {label:'16h特例（週2回まで）',val:totalWeek15h+'/2回',ok:totalWeek15h<=2,warn:totalWeek15h===2,msg:totalWeek15h>2?'週3回以上！違反':totalWeek15h===2?'上限到達':thisOver15?'適用中':'未使用'},
     {label:'運転時間（2日平均9h以内）',val:fmtHM(driveMin*60),ok:avg2ok,warn:!avg2ok&&!avg2both,msg:avg2both?'前後とも9h超！違反':!avg2ok?'前日平均'+fmtHM(avg2prev*60)+'（注意）':'適正'},
     {label:'最大連続運転（4h以内）',val:fmtHM(maxCont*60),ok:maxCont<=240,warn:false,msg:maxCont>240?'4h超過！要休憩':'適正'},
   ];
@@ -2066,18 +2186,14 @@ function simUpdate(){
   const confirmedBadge=document.getElementById('confirmed-badge');
   const unconfirmBtn=document.getElementById('unconfirm-btn');
   if(isConfirmed){
-    // 確定済み：リザルト枠の色を判定
-    // 翌日に注意が必要（2日平均で翌日に影響）= warn、違反あり = over、問題なし = blue
-    const hasViolation=isOver||(avg2prev>9*60&&avg2next>9*60)||maxCont>240;
-    const needsAttention=isWarn||(!avg2ok)||driveMin>9*60;
+    const hasViolation=isRealOver||(avg2prev>9*60&&avg2next>9*60)||maxCont>240||totalWeek15h>2;
+    const needsAttention=isSpecial||isWarn||(!avg2ok)||driveMin>9*60;
     const confirmedClass=hasViolation?'confirmed-over':needsAttention?'confirmed-warn':'confirmed-ok';
     result.className='sim-result on '+confirmedClass;
     document.getElementById('srt').textContent='CONFIRMED RESULT'+(hasViolation?' — 🚨 違反あり':needsAttention?' — ⚠ 翌日注意':' — ✅ 問題なし');
-    // 終了予定→終了時間
     document.getElementById('sim-end-time').innerHTML=
       '終了時間: '+endTimeStr+' （'+fmtHM(totalSec)+'）'+
       '<span style="margin-left:10px;color:var(--muted);font-size:9px">（翌日始業可能 '+nextStartStr+'〜）</span>';
-    // ボタン切り替え
     confirmBtn.style.display='none';
     confirmedBadge.style.display='block';
     confirmedBadge.style.background=hasViolation?'rgba(231,76,60,.15)':needsAttention?'rgba(243,156,18,.15)':'rgba(52,152,219,.15)';
@@ -2323,7 +2439,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.9.1',
+    version:'1.10.0',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
@@ -2417,13 +2533,18 @@ function exportWeekPDF(){
   const [sh,sm]=(dayData[0].plan.startTime||'08:00').split(':').map(Number);
   const startBase=sh*60+sm;
 
+  // 16h特例使用カウント（PDF用）
+  let pdfWeek15hCount=0;
+  dayData.forEach(dd=>{ if(dd.totalMin>15*60) pdfWeek15hCount++; });
+  const pdfSpecialOk=pdfWeek15hCount<=2;
+
   let html=`
 <div style="font-family:'Noto Sans JP',sans-serif;padding:24px;max-width:700px;margin:0 auto;color:#1a1a18">
   <div class="pdf-week-title">SELMANE — 週間運行レポート</div>
   <div class="pdf-meta">対象期間: ${fmt(mon)} (月) 〜 ${fmt(sun)} (日)　出力日時: ${fmt(new Date())} ${p2(new Date().getHours())}:${p2(new Date().getMinutes())}</div>
   <div style="font-size:9px;color:#aaa;font-family:'DM Mono',monospace;margin-bottom:16px">by take aka hamachicat / powered by Claude AI</div>
 
-  <div class="pdf-summary-grid">
+  <div class="pdf-summary-grid" style="grid-template-columns:repeat(4,1fr)">
     <div class="pdf-summary-block" style="border:1px solid ${isOverWeek?'#e74c3c':'#ddd'}">
       <div class="pdf-summary-label">週間運転時間</div>
       <div class="pdf-summary-val" style="color:${isOverWeek?'#e74c3c':'#2ecc71'}">${fmtHM(weekDriveMins*60)}</div>
@@ -2433,6 +2554,11 @@ function exportWeekPDF(){
       <div class="pdf-summary-label">週間拘束時間</div>
       <div class="pdf-summary-val" style="color:#1a1a18">${fmtHM(weekBoundMins*60)}</div>
       <div class="pdf-summary-badge" style="color:#888">合計</div>
+    </div>
+    <div class="pdf-summary-block" style="border:1px solid ${pdfSpecialOk?'#ddd':'#e74c3c'}">
+      <div class="pdf-summary-label">16h特例</div>
+      <div class="pdf-summary-val" style="color:${pdfSpecialOk?pdfWeek15hCount>0?'#f39c12':'#2ecc71':'#e74c3c'}">${pdfWeek15hCount}/2回</div>
+      <div class="pdf-summary-badge" style="color:${pdfSpecialOk?'#2ecc71':'#e74c3c'}">${pdfWeek15hCount>2?'超過！':pdfWeek15hCount===2?'上限到達':'適正'}</div>
     </div>
     <div class="pdf-summary-block" style="border:1px solid #ddd">
       <div class="pdf-summary-label">稼働日数</div>
@@ -2457,24 +2583,30 @@ function exportWeekPDF(){
   TASKS.forEach(t=>{ html+=`<div class="pdf-task-item"><div class="pdf-task-dot" style="background:${t.color}"></div>${t.name}</div>`; });
   html+=`<div class="pdf-task-item"><div style="width:8px;height:8px;background:rgba(243,156,18,.6);border-radius:1px;flex-shrink:0"></div>13h線</div>`;
   html+=`<div class="pdf-task-item"><div style="width:8px;height:8px;background:rgba(231,76,60,.6);border-radius:1px;flex-shrink:0"></div>15h線</div>`;
+  html+=`<div class="pdf-task-item"><div style="width:8px;height:8px;background:rgba(180,0,0,.6);border-radius:1px;flex-shrink:0"></div>16h線</div>`;
   html+=`</div>`;
 
   const DAYS_LABEL=['月','火','水','木','金','土','日'];
-  const spanSec=15*3600;
+  const spanSec=16*3600;
 
   dayData.forEach((dd,i)=>{
-    const isOver=dd.totalMin>15*60, isWarn=dd.totalMin>13*60&&!isOver;
+    const isOver16=dd.totalMin>16*60;
+    const is15to16=dd.totalMin>15*60&&dd.totalMin<=16*60;
+    const isOver=isOver16; // 真の超過は16h超のみ
+    const isWarn=dd.totalMin>13*60&&dd.totalMin<=15*60;
+    const isSpecialDay=is15to16;
     const driveOver=dd.driveMin>9*60, contOver=dd.maxCont>4*60;
-    const hasViol=isOver||driveOver||contOver;
-    const hasWarn=isWarn;
-    const bgColor=isOver?'#fdecea':isWarn?'#fef9e7':'#fff';
-    const borderColor=isOver?'#e74c3c':isWarn?'#f39c12':'#eee';
+    const hasViol=isOver16||driveOver||contOver;
+    const hasWarn=isWarn||isSpecialDay;
+    const bgColor=isOver16?'#fdecea':isSpecialDay?'#fef5e7':isWarn?'#fef9e7':'#fff';
+    const borderColor=isOver16?'#e74c3c':isSpecialDay?'#d35400':isWarn?'#f39c12':'#eee';
 
     html+=`<div class="pdf-day-block" style="background:${bgColor};border:1px solid ${borderColor};border-radius:8px;padding:10px 12px;margin-bottom:10px">`;
     html+=`<div class="pdf-day-header">
       <div>
-        <span class="pdf-day-label${isOver?' violation':isWarn?' warning':''}">${DAYS_LABEL[i]}曜日 (${fmtJP(dd.d)})</span>`;
-    if(isOver) html+=`<span class="pdf-violation-tag over">拘束15h超過</span>`;
+        <span class="pdf-day-label${isOver16?' violation':isSpecialDay||isWarn?' warning':''}">${DAYS_LABEL[i]}曜日 (${fmtJP(dd.d)})</span>`;
+    if(isOver16) html+=`<span class="pdf-violation-tag over">拘束16h超過</span>`;
+    else if(isSpecialDay) html+=`<span class="pdf-violation-tag warn">15h超（特例）</span>`;
     else if(isWarn) html+=`<span class="pdf-violation-tag warn">拘束13h超過</span>`;
     if(driveOver) html+=`<span class="pdf-violation-tag over">運転9h超過</span>`;
     if(contOver) html+=`<span class="pdf-violation-tag over">連続運転4h超過</span>`;
@@ -2487,7 +2619,7 @@ function exportWeekPDF(){
       const [dsh,dsm]=(dd.plan.startTime||'08:00').split(':').map(Number);
       const dsBase=dsh*60+dsm;
       html+=`<div class="pdf-tl-axis">`;
-      for(let h=0;h<=15;h+=3){
+      for(let h=0;h<=16;h+=4){
         const tm=dsBase+h*60;
         html+=`<span>${p2(Math.floor(tm/60)%24)}:${p2(tm%60)}</span>`;
       }
@@ -2503,8 +2635,9 @@ function exportWeekPDF(){
         html+=`<div class="pdf-tl-seg" style="left:${lp}%;width:${wp}%;background:${t.color}" title="${t.name} ${fmtDur(st.durationMin*60)}"></div>`;
         cur+=st.durationMin*60;
       });
-      html+=`<div class="pdf-tl-vline13" style="left:${13/15*100}%"></div>`;
-      html+=`<div class="pdf-tl-vline15" style="left:99%"></div>`;
+      html+=`<div class="pdf-tl-vline13" style="left:${13/16*100}%"></div>`;
+      html+=`<div class="pdf-tl-vline15" style="left:${15/16*100}%"></div>`;
+      html+=`<div style="position:absolute;top:0;width:2px;height:100%;background:rgba(180,0,0,.6);z-index:5;left:99%"></div>`;
       html+=`</div>`;
 
       // タスク内訳
