@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.5.1</title>
+<title>SELMANE v1.8.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -468,7 +468,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.5.1</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.8.0</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -591,6 +591,11 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
       <div class="ssb"><div class="ssl">走行距離</div><div class="ssv" id="ss-odo-diff" style="color:var(--ok)">--</div></div>
       <div class="ssb"><div class="ssl">帰庫距離</div><div class="ssv" id="ss-odo-end" style="color:var(--muted)">--</div></div>
     </div>
+    <div class="sim-stats">
+      <div class="ssb"><div class="ssl">13hまで残り</div><div class="ssv" id="ss-r13" style="color:var(--ok)">--</div></div>
+      <div class="ssb"><div class="ssl">15hまで残り</div><div class="ssv" id="ss-r15" style="color:var(--ok)">--</div></div>
+      <div class="ssb"><div class="ssl">運転可能残</div><div class="ssv" id="ss-rdrive" style="color:var(--blue)">--</div></div>
+    </div>
     <div class="sim-tl-axis" id="sim-tl-axis"></div>
     <div class="sim-tl-bar" id="sim-tl-bar">
       <div class="stlvl stlvl13" id="stlvl13" style="display:none"></div>
@@ -621,13 +626,20 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <div class="sim-add-area">
       <div class="sat">＋ タスクを追加</div>
       <div class="sim-task-btns" id="sim-task-btns"></div>
-      <div class="drum-wrap">
+      <div class="drum-wrap" id="drum-wrap-main">
         <label>予定時間</label>
         <div class="drum-picker">
           <div class="drum" id="drum-h"><div class="drum-sel-line"></div><div class="drum-inner" id="drum-h-inner"></div></div>
           <span class="drum-unit">h</span>
           <div class="drum" id="drum-m"><div class="drum-sel-line"></div><div class="drum-inner" id="drum-m-inner"></div></div>
           <span class="drum-unit">m</span>
+        </div>
+      </div>
+      <!-- マーカータスク用メモ -->
+      <div id="marker-memo-area" style="display:none;margin-bottom:9px">
+        <div class="sim-place-row">
+          <label>💬 メモ</label>
+          <input type="text" class="place-input" id="marker-memo-input" placeholder="メモ（任意）">
         </div>
       </div>
       <!-- 運転タスク用：出発地＋目的地 -->
@@ -689,7 +701,8 @@ const TASKS=[
   {id:'wait',  name:'待機',       icon:'⏳',color:'#f39c12',isDrive:false},
   {id:'rest',  name:'休憩',       icon:'☕',color:'#3498db',isDrive:false},
   {id:'sleep', name:'休息',       icon:'🛏',color:'#1a5276',isDrive:false,isOffDuty:true},
-  {id:'other', name:'その他',     icon:'📋',color:'#9b59b6',isDrive:false},
+  {id:'checkin',name:'中間点呼',  icon:'📞',color:'#8e44ad',isDrive:false,isMarker:true},
+  {id:'other', name:'その他',     icon:'📋',color:'#9b59b6',isDrive:false,isMarker:true},
 ];
 const DAYS_JP=['日','月','火','水','木','金','土'];
 const DAYS_EN=['SUN','MON','TUE','WED','THU','FRI','SAT'];
@@ -1309,7 +1322,25 @@ function simRenderTaskBtns(){
     if(simSelTask===t.id)btn.style.borderColor=t.color;
     btn.innerHTML=`<span class="si">${t.icon}</span>${t.name}`;
     btn.onclick=()=>{
+      // マーカータスク（中間点呼・その他）はメモ付きで追加
+      if(t.isMarker){
+        simSelTask=t.id;
+        simRenderTaskBtns();
+        // ドラム・場所欄を隠してメモ欄を表示
+        document.getElementById('place-drive').style.display='none';
+        document.getElementById('place-single').style.display='none';
+        document.getElementById('map-btn').style.display='none';
+        document.getElementById('map-note').style.display='none';
+        const memoArea=document.getElementById('marker-memo-area');
+        memoArea.style.display='block';
+        document.getElementById('marker-memo-input').value='';
+        document.getElementById('marker-memo-input').placeholder=t.id==='checkin'?'場所・点呼相手など（任意）':'メモ（任意）';
+        document.getElementById('drum-wrap-main').style.display='none';
+        return;
+      }
       simSelTask=t.id;
+      document.getElementById('marker-memo-area').style.display='none';
+      document.getElementById('drum-wrap-main').style.display='flex';
       // 休憩選択時はデフォルト30分
       if(t.id==='rest'){drumH=0;drumM=30;}
       else if(t.id==='sleep'){drumH=3;drumM=0;}
@@ -1356,7 +1387,7 @@ function simRenderList(){
     const startH=Math.floor(curMin/60)%24,startM=curMin%60;
     const endMin=curMin+st.durationMin;
     const endH=Math.floor(endMin/60)%24,endM=endMin%60;
-    const timeStr=`${p2(startH)}:${p2(startM)} → ${p2(endH)}:${p2(endM)}`;
+    const timeStr=t?.isMarker?`${p2(startH)}:${p2(startM)}`:`${p2(startH)}:${p2(startM)} → ${p2(endH)}:${p2(endM)}`;
     curMin=endMin;
 
     const isDrive=t?.isDrive;
@@ -1367,6 +1398,18 @@ function simRenderList(){
     const row=document.createElement('div');
     row.className='srow';
     row.style.flexWrap='wrap';
+    if(t?.isMarker){
+      const memoLabel=st.memo?`<span style="color:var(--muted);font-size:10px;font-family:'DM Mono',monospace;margin-left:5px">💬 ${st.memo}</span>`:'';
+      row.innerHTML=`
+        <div class="scolor" style="background:${t.color}"></div>
+        <div class="lb" style="flex:1;min-width:0">
+          <div class="sname">${t.icon} ${t.name}${memoLabel}</div>
+          <div class="stime">${timeStr}</div>
+        </div>
+        <button class="srem" onclick="event.stopPropagation();simRemove(${i})">✕</button>`;
+      list.appendChild(row);
+    } else {
+
     row.innerHTML=`
       <div class="scolor" style="background:${t.color}"></div>
       <div class="lb" style="flex:1;min-width:0">
@@ -1413,6 +1456,7 @@ function simRenderList(){
       inp.addEventListener('focus', e=>e.stopPropagation());
     });
     list.appendChild(row);
+    }// end else (non-marker)
 
     // タスク間の挿入ボタン
     const ins=document.createElement('button');
@@ -1423,9 +1467,11 @@ function simRenderList(){
     ins.onclick=()=>openInsertForm(insertIdx);
     list.appendChild(ins);
 
-    // ドラム初期化
+    // ドラム初期化（非マーカーのみ）
+    if(!t?.isMarker){
     buildRowDrum(`ed-hi-${i}`, `ed-h-${i}`, H_VALS, Math.floor(st.durationMin/60), i, 'h');
     buildRowDrum(`ed-mi-${i}`, `ed-m-${i}`, M_VALS, M_VALS.reduce((a,v)=>Math.abs(v-st.durationMin%60)<Math.abs(a-st.durationMin%60)?v:a,0), i, 'm');
+    }
   });
 }
 
@@ -1560,6 +1606,14 @@ function buildRowDrum(innerId, drumId, vals, current, rowIdx, type){
 
 function simAddTask(){
   if(!simSelTask){alert('タスクを選んでな！');return;}
+  const t=taskById(simSelTask);
+  // マーカータスク（中間点呼・その他）
+  if(t?.isMarker){
+    const memo=document.getElementById('marker-memo-input').value.trim();
+    simTasks.push({taskId:simSelTask,durationMin:0,place:'',placeFrom:'',placeTo:'',memo});
+    document.getElementById('marker-memo-input').value='';
+    simUpdate();return;
+  }
   const durationMin=drumH*60+drumM;
   if(durationMin<=0){alert('時間を設定してな！');return;}
   const isDrive=taskById(simSelTask)?.isDrive;
@@ -1700,7 +1754,24 @@ function buildSifDrum(innerId,drumId,vals,current,type){
 }
 
 function sifSelectTask(el,tid,color){
+  // マーカータスクはメモ入力だけ表示
+  if(taskById(tid)?.isMarker){
+    sifSelTask=tid;
+    el.closest('.sif-tasks').querySelectorAll('.sif-btn').forEach(b=>{
+      b.classList.remove('sel');b.style.borderColor='';
+    });
+    el.classList.add('sel');el.style.borderColor=color;
+    const area=document.getElementById('sif-place-area');
+    area.innerHTML=`<div class="sif-place-row"><label>💬 メモ</label><input type="text" class="sif-place place-input" id="sif-memo" placeholder="${tid==='checkin'?'場所・点呼相手など（任意）':'メモ（任意）'}"></div>`;
+    // ドラムを隠す
+    const durRow=el.closest('.sim-insert-form').querySelector('.sif-dur-row');
+    if(durRow)durRow.style.display='none';
+    return;
+  }
   sifSelTask=tid;
+  // ドラム表示を復元
+  const durRow=el.closest('.sim-insert-form').querySelector('.sif-dur-row');
+  if(durRow)durRow.style.display='flex';
   el.closest('.sif-tasks').querySelectorAll('.sif-btn').forEach(b=>{
     b.classList.remove('sel');b.style.borderColor='';
   });
@@ -1733,6 +1804,14 @@ function sifSelectTask(el,tid,color){
 
 function doInsert(idx){
   if(!sifSelTask){alert('タスクを選んでな！');return;}
+  const t=taskById(sifSelTask);
+  // マーカータスク
+  if(t?.isMarker){
+    const memo=(document.getElementById('sif-memo')?.value||'').trim();
+    simTasks.splice(idx,0,{taskId:sifSelTask,durationMin:0,place:'',placeFrom:'',placeTo:'',memo});
+    sifSelTask=null;insertFormIdx=-1;
+    simUpdate();return;
+  }
   const durationMin=sifDrumH*60+sifDrumM;
   if(durationMin<=0){alert('時間を設定してな！');return;}
   const isDrive=taskById(sifSelTask)?.isDrive;
@@ -1759,6 +1838,8 @@ function simClear(){
   document.getElementById('place-single').style.display='none';
   document.getElementById('map-btn').style.display='none';
   document.getElementById('map-note').style.display='none';
+  document.getElementById('marker-memo-area').style.display='none';
+  document.getElementById('drum-wrap-main').style.display='flex';
 }
 
 function getPrevPlace(){
@@ -1847,6 +1928,22 @@ function simUpdate(){
   document.getElementById('ss-drive').style.color='var(--blue)';
   document.getElementById('ss-end').textContent=endTimeStr;
 
+  // 残り拘束時間・運転可能残
+  const r13=Math.max(0,13*3600-totalSec);
+  const r15=Math.max(0,15*3600-totalSec);
+  document.getElementById('ss-r13').textContent=r13>0?fmtHM(r13):'超過';
+  document.getElementById('ss-r13').style.color=r13<=0?'var(--over)':r13<3600?'var(--warn)':'var(--ok)';
+  document.getElementById('ss-r15').textContent=r15>0?fmtHM(r15):'超過';
+  document.getElementById('ss-r15').style.color=r15<=0?'var(--over)':r15<3600?'var(--warn)':'var(--ok)';
+  const prevDay2=new Date(currentSimDate);prevDay2.setDate(prevDay2.getDate()-1);
+  const prevPlan2=simPlans[simDayKey(prevDay2)];
+  const hasPrev2=prevPlan2&&prevPlan2.tasks.length>0;
+  const prevDriveMin2=hasPrev2?prevPlan2.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
+  const maxDrive2=hasPrev2?Math.max(0,18*60-prevDriveMin2):9*60;
+  const driveRemain2=Math.max(0,maxDrive2-driveMin);
+  document.getElementById('ss-rdrive').textContent=fmtHM(driveRemain2*60);
+  document.getElementById('ss-rdrive').style.color=driveRemain2<=0?'var(--over)':driveRemain2<=60?'var(--warn)':'var(--blue)';
+
   const bar=document.getElementById('sim-tl-bar');
   bar.querySelectorAll('.stlseg').forEach(e=>e.remove());
   const spanMs=15*3600;let cur=0;
@@ -1898,9 +1995,30 @@ function simUpdate(){
   });
 
   const checks=document.getElementById('sim-checks');checks.innerHTML='';
+
+  // 前日の運転時間を取得
+  const prevDay=new Date(currentSimDate);prevDay.setDate(prevDay.getDate()-1);
+  const prevPlan=simPlans[simDayKey(prevDay)];
+  const prevDriveMin=prevPlan?prevPlan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
+  // 翌日の運転時間を取得
+  const nextDay=new Date(currentSimDate);nextDay.setDate(nextDay.getDate()+1);
+  const nextPlan=simPlans[simDayKey(nextDay)];
+  const nextDriveMin=nextPlan?nextPlan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
+  // 2日平均（前日＋当日、当日＋翌日）
+  const avg2prev=(prevDriveMin+driveMin)/2;
+  const avg2next=(driveMin+nextDriveMin)/2;
+  const avg2worst=Math.max(avg2prev,avg2next);
+  const avg2ok=avg2worst<=9*60;
+  const avg2both=avg2prev>9*60&&avg2next>9*60;
+  // 当日の運転可能時間（前日ベース：2日平均が9h以内になる上限）
+  const hasPrev=prevPlan&&prevPlan.tasks.length>0;
+  const maxDriveToday=hasPrev?Math.max(0,18*60-prevDriveMin):9*60;
+  const driveRemain=Math.max(0,maxDriveToday-driveMin);
+
   const checkList=[
     {label:'拘束時間（上限13h/最大15h）',val:fmtHM(totalSec),ok:totalSec<=13*3600,warn:totalSec>13*3600&&totalSec<=15*3600,msg:isOver?'15h超過！法令違反':isWarn?'13h超過（原則違反）':'適正'},
-    {label:'運転時間（1日9h以内）',val:fmtHM(driveMin*60),ok:driveMin<=540,warn:false,msg:driveMin>540?'9h超過！法令違反':'適正'},
+    {label:'運転時間（2日平均9h以内）',val:fmtHM(driveMin*60),ok:avg2ok,warn:!avg2ok&&!avg2both,msg:avg2both?'前後とも9h超！違反':!avg2ok?'前日平均'+fmtHM(avg2prev*60)+'（注意）':'適正'},
+    {label:'本日の運転可能残',val:fmtHM(driveRemain*60),ok:driveRemain>60,warn:driveRemain>0&&driveRemain<=60,msg:hasPrev?(driveRemain<=0?'上限到達':'前日'+fmtHM(prevDriveMin*60)+'→上限'+fmtHM(maxDriveToday*60)):'前日データなし（9h目安）'},
     {label:'最大連続運転（4h以内）',val:fmtHM(maxCont*60),ok:maxCont<=240,warn:false,msg:maxCont>240?'4h超過！要休憩':'適正'},
   ];
   checkList.forEach(c=>{
