@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.10.0</title>
+<title>SELMANE v1.11.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -225,7 +225,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .wdb.warn-day{border:1px solid var(--warn)}
 .wdb.over-day{border:1px solid var(--over)}
 .wdb:active{transform:scale(.95)}
-.week-compliance-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.week-compliance-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px}
 .wcb{background:var(--s2);border-radius:8px;padding:8px;text-align:center}
 .wcl{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1px;color:var(--muted);margin-bottom:2px}
 .wcv{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.5px}
@@ -479,7 +479,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.10.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.11.1</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -758,9 +758,10 @@ function saveMeta(){localStorage.setItem('dtacho_meta',JSON.stringify(dayMeta))}
 
 const NOW=new Date();
 document.getElementById('date-info').innerHTML=
-  `${NOW.getFullYear()}/${p2(NOW.getMonth()+1)}/${p2(NOW.getDate())}<br>${DAYS_JP[NOW.getDay()]}曜日`;
+  `(${toReki(NOW.getFullYear())}年)${NOW.getFullYear()}/${p2(NOW.getMonth()+1)}/${p2(NOW.getDate())}<br>${DAYS_JP[NOW.getDay()]}曜日`;
 
 function p2(n){return String(n).padStart(2,'0')}
+function toReki(y){return y>=2019?`令和${y-2018}`:`平成${y-1988}`;}
 function dayKey(d){return`${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`}
 function todayKey(){return dayKey(new Date())}
 function todayLogs(){const t=todayKey();return logs.filter(l=>dayKey(new Date(l.startMs))===t)}
@@ -786,6 +787,19 @@ function switchMode(mode){
   if(mode==='sim') simUpdate();
 }
 
+// ===== 有効休憩時間（改善基準告示ルール） =====
+// 10分未満→無効(0)、10分以上15分未満→10分扱い、15分以上→実時間
+function effectiveBreakSec(sec){
+  if(sec<600) return 0;
+  if(sec<900) return 600;
+  return sec;
+}
+function effectiveBreakMin(min){
+  if(min<10) return 0;
+  if(min<15) return 10;
+  return min;
+}
+
 // ===== 集計 =====
 function calcStats(tl,departMs){
   if(!departMs&&!tl.length)return{totalSec:0,driveSec:0,contDriveSec:0};
@@ -801,7 +815,7 @@ function calcStats(tl,departMs){
       if(breakAcc>=1800){cont=0;breakAcc=0;}
       cont+=l.durationSec;
     } else {
-      breakAcc+=l.durationSec;
+      breakAcc+=effectiveBreakSec(l.durationSec);
       if(breakAcc>=1800){cont=0;breakAcc=0;}
     }
     if(cont>maxCont)maxCont=cont;
@@ -1194,9 +1208,14 @@ function renderWeekNav(){
 
   row.innerHTML = `
     <div class="wcb">
-      <div class="wcl">週運転時間</div>
+      <div class="wcl">週運転</div>
       <div class="wcv ${driveOk?'ok':'over'}">${fmtHM(weekDriveMins*60)}</div>
       <div class="wc-badge" style="color:${driveOk?'var(--ok)':'var(--over)'}">${driveOk?'44h以内 ✓':'44h超過!'}</div>
+    </div>
+    <div class="wcb">
+      <div class="wcl">2週平均</div>
+      <div class="wcv ${twoWkOk?'ok':'over'}">${fmtHM(twoWeekDriveAvg*60)}</div>
+      <div class="wc-badge" style="color:${twoWkOk?'var(--ok)':'var(--over)'}">${twoWkOk?'44h以内 ✓':'超過!'}</div>
     </div>
     <div class="wcb">
       <div class="wcl">16h特例</div>
@@ -1204,7 +1223,7 @@ function renderWeekNav(){
       <div class="wc-badge" style="color:${specialOk?'var(--ok)':'var(--over)'}">${week15hCount>2?'超過！':week15hCount===2?'上限到達':week15hCount>0?'使用中':'未使用'}</div>
     </div>
     <div class="wcb">
-      <div class="wcl">月拘束時間</div>
+      <div class="wcl">月拘束</div>
       <div class="wcv ${monthOk?'ok':monthBoundMins<=310*60?'warn':'over'}">${fmtHM(monthBoundMins*60)}</div>
       <div class="wc-badge" style="color:${monthOk?'var(--ok)':monthBoundMins<=310*60?'var(--warn)':'var(--over)'}">${monthOk?'284h以内 ✓':monthBoundMins<=310*60?'要注意':'超過!'}</div>
     </div>`;
@@ -2329,7 +2348,7 @@ function simUpdate(){
       if(breakAcc>=30){cont=0;breakAcc=0;}
       cont+=st.durationMin;
     } else {
-      breakAcc+=st.durationMin;
+      breakAcc+=effectiveBreakMin(st.durationMin);
       if(breakAcc>=30){cont=0;breakAcc=0;}
     }
     if(cont>maxCont)maxCont=cont;
@@ -2767,7 +2786,7 @@ async function initOpening(){
   const now = new Date();
   const days = ['日','月','火','水','木','金','土'];
   document.getElementById('op-date').textContent =
-    `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+    `(${toReki(now.getFullYear())}年)${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
   // 交通安全運動チェック（キャッシュ or API取得）とAI注意喚起を並行実行
   const activeCampaign = await checkSafetyCampaign();
   loadSafetyTip(activeCampaign);
@@ -2787,7 +2806,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.10.0',
+    version:'1.11.1',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
@@ -2863,7 +2882,7 @@ function exportWeekPDF(){
         if(breakAcc>=30){cont=0;breakAcc=0;}
         cont+=st.durationMin;
       } else {
-        breakAcc+=st.durationMin;
+        breakAcc+=effectiveBreakMin(st.durationMin);
         if(breakAcc>=30){cont=0;breakAcc=0;}
       }
       if(cont>maxCont)maxCont=cont;
