@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.13.3</title>
+<title>SELMANE v1.14.0</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -313,6 +313,28 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .clock-drum-label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;width:100%;margin-bottom:2px}
 .clock-drum-sep{font-size:14px;color:var(--muted);font-family:'DM Mono',monospace;margin:0 1px}
 .clock-drum-arrow{font-size:14px;color:var(--c-depart);font-family:'DM Mono',monospace;margin:0 6px}
+/* ODOドラムピッカー */
+.odo-display{display:flex;align-items:center;gap:6px;cursor:pointer;padding:7px 10px;background:var(--s1);border:1px solid var(--border);border-radius:7px;transition:all .12s;min-width:0}
+.odo-display:active{background:var(--s2)}
+.odo-display .odo-val{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--text)}
+.odo-display .odo-val.empty{color:var(--muted);font-size:14px;font-family:'Noto Sans JP',sans-serif;letter-spacing:0}
+.odo-display .odo-unit{font-size:11px;color:var(--muted);font-family:'DM Mono',monospace}
+.odo-display .odo-edit{font-size:10px;color:var(--c-depart);font-family:'DM Mono',monospace}
+.odo-drum-panel{display:none;background:var(--s2);border:1.5px solid var(--c-depart);border-radius:10px;padding:10px;margin-top:6px;animation:fadeUp .15s ease}
+.odo-drum-panel.open{display:block}
+.odo-drum-row{display:flex;align-items:center;justify-content:center;gap:2px}
+.odo-digit-drum{width:32px;height:90px;overflow:hidden;position:relative;border-radius:8px;background:var(--bg);border:1px solid var(--border)}
+.odo-digit-drum .srow-drum-sel{position:absolute;top:30px;left:2px;right:2px;height:30px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);pointer-events:none;z-index:1;border-radius:3px;background:rgba(0,212,255,.06)}
+.odo-digit-inner{display:flex;flex-direction:column;transition:transform .15s cubic-bezier(.4,0,.2,1)}
+.odo-digit-item{height:30px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:19px;color:var(--muted);cursor:pointer;user-select:none;flex-shrink:0}
+.odo-digit-item.center{color:var(--text);font-size:22px}
+.odo-digit-drum::before,.odo-digit-drum::after{content:'';position:absolute;left:0;right:0;height:30px;z-index:2;pointer-events:none}
+.odo-digit-drum::before{top:0;background:linear-gradient(to bottom,var(--bg),transparent)}
+.odo-digit-drum::after{bottom:0;background:linear-gradient(to top,var(--bg),transparent)}
+.odo-comma{font-family:'DM Mono',monospace;font-size:14px;color:var(--muted);align-self:center}
+.odo-drum-btns{display:flex;gap:6px;margin-top:8px}
+.odo-drum-ok{flex:1;background:rgba(0,212,255,.15);border:1.5px solid var(--c-depart);border-radius:7px;padding:7px;color:var(--c-depart);font-size:12px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:center}
+.odo-drum-cancel{background:none;border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--muted);font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer}
 .sim-checks{display:flex;flex-direction:column;gap:0;margin-top:10px;border-top:1px solid var(--border)}
 .scr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
 .scr:last-child{border-bottom:none}
@@ -539,7 +561,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div style="text-align:center;margin-bottom:32px">
     <div id="op-appname" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--c-depart);line-height:1">SELMANE</div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px">SELF MANAGEMENT FOR DRIVERS</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.13.3</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.14.0</div>
   </div>
 
   <!-- 日付 -->
@@ -597,7 +619,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.13.3</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.14.0</div>
 <div id="profile-bar" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--s1);border-radius:8px;display:flex;justify-content:space-between"></div>
 
 <!-- モード切替タブ -->
@@ -766,8 +788,18 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     </div>
     <div class="sim-place-row" style="margin-bottom:14px">
       <label>🔢 出庫距離</label>
-      <input type="number" class="place-input" id="sim-odo-start" placeholder="オドメーター（km）" style="width:140px;font-family:'DM Mono',monospace" oninput="simUpdate();saveCurrentSimDay()">
-      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">km</span>
+      <div class="odo-display" id="odo-start-display" onclick="toggleOdoPanel('start')">
+        <span class="odo-val empty" id="odo-start-val">タップして入力</span>
+        <span class="odo-unit">km</span>
+        <span class="odo-edit">▼</span>
+      </div>
+    </div>
+    <div class="odo-drum-panel" id="odo-start-panel">
+      <div class="odo-drum-row" id="odo-start-drums"></div>
+      <div class="odo-drum-btns">
+        <button class="odo-drum-ok" onclick="confirmOdo('start')">✔ セット</button>
+        <button class="odo-drum-cancel" onclick="closeOdoPanel('start')">✕</button>
+      </div>
     </div>
 
     <div class="sim-add-area">
@@ -849,8 +881,18 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     </div>
     <div class="sim-place-row">
       <label>🔢 帰庫距離</label>
-      <input type="number" class="place-input" id="sim-odo-end" placeholder="オドメーター（km）" style="width:140px;font-family:'DM Mono',monospace" oninput="simUpdate();saveCurrentSimDay()">
-      <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">km</span>
+      <div class="odo-display" id="odo-end-display" onclick="toggleOdoPanel('end')">
+        <span class="odo-val empty" id="odo-end-val">タップして入力</span>
+        <span class="odo-unit">km</span>
+        <span class="odo-edit">▼</span>
+      </div>
+    </div>
+    <div class="odo-drum-panel" id="odo-end-panel">
+      <div class="odo-drum-row" id="odo-end-drums"></div>
+      <div class="odo-drum-btns">
+        <button class="odo-drum-ok" onclick="confirmOdo('end')">✔ セット</button>
+        <button class="odo-drum-cancel" onclick="closeOdoPanel('end')">✕</button>
+      </div>
     </div>
     <button id="confirm-btn" onclick="confirmDay()" style="width:100%;margin-top:10px;background:rgba(0,212,255,.15);border:2px solid var(--c-depart);border-radius:10px;padding:12px;color:var(--c-depart);font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer">✔ 帰庫確定</button>
     <div id="confirmed-badge" style="display:none;text-align:center;padding:10px;margin-top:10px;border-radius:10px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif">✔ 確定済み</div>
@@ -954,6 +996,146 @@ function calcSleepStatus(tasks){
   }
   // 4回以上は認められない
   return {valid:false, count, totalMin, msg:'休息'+count+'回（3回まで）', invalidSleepMin:totalMin};
+}
+
+// ===== ODOドラムピッカー =====
+const ODO_DIGITS=7;
+const DIGIT_VALS=[0,1,2,3,4,5,6,7,8,9];
+const odoVals={start:Array(ODO_DIGITS).fill(0),end:Array(ODO_DIGITS).fill(0)};
+const odoSet={start:false,end:false};
+
+function buildOdoDrums(type){
+  const container=document.getElementById(`odo-${type}-drums`);
+  if(!container)return;
+  container.innerHTML='';
+  for(let d=0;d<ODO_DIGITS;d++){
+    // カンマ区切り（下3桁と下6桁の境目）
+    if(d===ODO_DIGITS-3||d===ODO_DIGITS-6){
+      const comma=document.createElement('span');comma.className='odo-comma';comma.textContent=',';
+      container.appendChild(comma);
+    }
+    const drum=document.createElement('div');drum.className='odo-digit-drum';drum.id=`odo-${type}-d${d}`;
+    const sel=document.createElement('div');sel.className='srow-drum-sel';drum.appendChild(sel);
+    const inner=document.createElement('div');inner.className='odo-digit-inner';inner.id=`odo-${type}-di${d}`;
+    // パディング
+    const pad1=document.createElement('div');pad1.className='odo-digit-item';pad1.textContent='';inner.appendChild(pad1);
+    DIGIT_VALS.forEach(v=>{
+      const el=document.createElement('div');el.className='odo-digit-item'+(v===odoVals[type][d]?' center':'');
+      el.textContent=String(v);el.dataset.val=v;inner.appendChild(el);
+    });
+    const pad2=document.createElement('div');pad2.className='odo-digit-item';pad2.textContent='';inner.appendChild(pad2);
+    drum.appendChild(inner);
+    container.appendChild(drum);
+    // スクロール位置
+    inner.style.transform=`translateY(${-odoVals[type][d]*30}px)`;
+    // タッチ・マウス操作
+    setupOdoDigitScroll(drum,inner,type,d);
+  }
+  const unitSpan=document.createElement('span');
+  unitSpan.style.cssText='font-size:12px;color:var(--muted);font-family:DM Mono,monospace;margin-left:4px';
+  unitSpan.textContent='km';container.appendChild(unitSpan);
+}
+
+function setupOdoDigitScroll(drum,inner,type,digitIdx){
+  const ITEM_H=30;
+  let startY=0,startIdx=0,isDrag=false;
+  function getIdx(){return odoVals[type][digitIdx];}
+  function moveTo(newIdx){
+    const clamped=Math.max(0,Math.min(9,newIdx));
+    odoVals[type][digitIdx]=clamped;
+    inner.style.transform=`translateY(${-clamped*ITEM_H}px)`;
+    inner.querySelectorAll('.odo-digit-item').forEach(el=>{
+      el.classList.toggle('center',parseInt(el.dataset.val)===clamped);
+    });
+  }
+  drum.addEventListener('touchstart',e=>{
+    startY=e.touches[0].clientY;startIdx=getIdx();isDrag=true;e.preventDefault();
+  },{passive:false});
+  drum.addEventListener('touchmove',e=>{
+    if(!isDrag)return;e.preventDefault();
+    moveTo(startIdx+Math.round((startY-e.touches[0].clientY)/ITEM_H));
+  },{passive:false});
+  drum.addEventListener('touchend',()=>{isDrag=false;});
+  drum.addEventListener('mousedown',e=>{
+    startY=e.clientY;startIdx=getIdx();isDrag=true;e.preventDefault();
+  });
+  document.addEventListener('mousemove',e=>{
+    if(!isDrag)return;
+    moveTo(startIdx+Math.round((startY-e.clientY)/ITEM_H));
+  });
+  document.addEventListener('mouseup',()=>{isDrag=false;});
+  drum.addEventListener('wheel',e=>{
+    e.preventDefault();moveTo(getIdx()+(e.deltaY>0?1:-1));
+  },{passive:false});
+}
+
+function getOdoFromDrums(type){
+  let val=0;
+  for(let d=0;d<ODO_DIGITS;d++){
+    val+=odoVals[type][d]*Math.pow(10,ODO_DIGITS-1-d);
+  }
+  return val;
+}
+
+function setOdoToDrums(type,val){
+  val=Math.max(0,Math.min(9999999,Math.round(val)));
+  for(let d=0;d<ODO_DIGITS;d++){
+    odoVals[type][d]=Math.floor(val/Math.pow(10,ODO_DIGITS-1-d))%10;
+  }
+}
+
+function updateOdoDisplay(type){
+  const valEl=document.getElementById(`odo-${type}-val`);
+  if(!valEl)return;
+  if(odoSet[type]){
+    const v=getOdoFromDrums(type);
+    valEl.textContent=v.toLocaleString();
+    valEl.className='odo-val';
+  } else {
+    valEl.textContent='タップして入力';
+    valEl.className='odo-val empty';
+  }
+}
+
+function toggleOdoPanel(type){
+  const panel=document.getElementById(`odo-${type}-panel`);
+  if(!panel)return;
+  const isOpen=panel.classList.contains('open');
+  // 他方を閉じる
+  const other=type==='start'?'end':'start';
+  document.getElementById(`odo-${other}-panel`)?.classList.remove('open');
+  if(isOpen){
+    panel.classList.remove('open');
+  } else {
+    buildOdoDrums(type);
+    panel.classList.add('open');
+  }
+}
+
+function closeOdoPanel(type){
+  document.getElementById(`odo-${type}-panel`)?.classList.remove('open');
+}
+
+function confirmOdo(type){
+  odoSet[type]=true;
+  updateOdoDisplay(type);
+  closeOdoPanel(type);
+  simUpdate();saveCurrentSimDay();
+}
+
+// 直近の確定済み帰庫距離を遡って取得（休日スキップ）
+function getLastConfirmedOdoEnd(fromDate){
+  for(let i=1;i<=30;i++){
+    const d=new Date(fromDate);d.setDate(d.getDate()-i);
+    const plan=simPlans[simDayKey(d)];
+    if(!plan)continue;
+    if(plan.holiday)continue; // 休日はスキップ
+    if(plan.confirmed&&plan.odoEnd){
+      const val=parseFloat(plan.odoEnd);
+      if(val>0)return val;
+    }
+  }
+  return 0;
 }
 
 // ===== 集計 =====
@@ -1615,30 +1797,51 @@ function loadSimDay(dk){
   if(startEl) startEl.value = plan.startTime||'08:00';
   const dpEl = document.getElementById('sim-depart-place');
   const apEl = document.getElementById('sim-arrive-place');
-  const osEl = document.getElementById('sim-odo-start');
-  const oeEl = document.getElementById('sim-odo-end');
   if(apEl) apEl.value = plan.arrivePlace||'';
-  if(oeEl) oeEl.value = plan.odoEnd||'';
-  // 出庫場所・距離：未入力なら前日の帰庫から参照
+
+  // 出庫場所：未入力なら直近の帰庫場所を遡り参照
   let depVal = plan.departPlace||'';
-  let odoStartVal = plan.odoStart||'';
-  if(!depVal || !odoStartVal){
-    const prevDay = new Date(currentSimDate);
-    prevDay.setDate(prevDay.getDate()-1);
-    const prevPlan = simPlans[simDayKey(prevDay)];
-    if(prevPlan){
-      if(!depVal && prevPlan.arrivePlace) depVal = prevPlan.arrivePlace;
-      if(!odoStartVal && prevPlan.odoEnd) odoStartVal = prevPlan.odoEnd;
+  if(!depVal){
+    for(let i=1;i<=30;i++){
+      const pd=new Date(currentSimDate);pd.setDate(pd.getDate()-i);
+      const pp=simPlans[simDayKey(pd)];
+      if(pp&&pp.holiday)continue;
+      if(pp&&pp.arrivePlace){depVal=pp.arrivePlace;break;}
     }
   }
   if(dpEl) dpEl.value = depVal;
-  if(osEl) osEl.value = odoStartVal;
+
+  // ODO: 保存済みデータがあればセット、なければ直近帰庫距離を遡り参照
+  let odoStartVal=parseFloat(plan.odoStart)||0;
+  if(!odoStartVal){
+    odoStartVal=getLastConfirmedOdoEnd(currentSimDate);
+  }
+  if(odoStartVal>0){
+    setOdoToDrums('start',odoStartVal);odoSet.start=true;
+  } else {
+    odoVals.start=Array(ODO_DIGITS).fill(0);odoSet.start=false;
+  }
+  updateOdoDisplay('start');
+
+  let odoEndVal=parseFloat(plan.odoEnd)||0;
+  if(odoEndVal>0){
+    setOdoToDrums('end',odoEndVal);odoSet.end=true;
+  } else {
+    // 帰庫距離の初期値＝出庫距離（微調整で済むように）
+    if(odoStartVal>0){setOdoToDrums('end',odoStartVal);}
+    else{odoVals.end=Array(ODO_DIGITS).fill(0);}
+    odoSet.end=false;
+  }
+  updateOdoDisplay('end');
+
   editingIdx=-1;
   // メモ読み込み
   const memoEl=document.getElementById('sim-day-memo');
   if(memoEl) memoEl.value=plan.dayMemo||'';
   // 休日状態の表示切り替え
   updateHolidayDisplay(plan.holiday);
+  // ODOパネルを閉じる
+  closeOdoPanel('start');closeOdoPanel('end');
   simUpdate();
 }
 
@@ -1646,22 +1849,24 @@ function updateHolidayDisplay(isHoliday){
   const banner=document.getElementById('holiday-banner');
   const btn=document.getElementById('holiday-btn');
   // 入力カード内の要素群
-  const simInputEls=['sim-depart-place','sim-odo-start','sim-arrive-card','sim-tasklist-card'].map(id=>document.getElementById(id));
+  const simInputEls=['sim-depart-place','sim-arrive-card','sim-tasklist-card','sim-memo-card'].map(id=>document.getElementById(id));
+  const odoDisplays=[document.getElementById('odo-start-display'),document.getElementById('odo-start-panel'),document.getElementById('odo-end-display'),document.getElementById('odo-end-panel')];
   const addArea=document.querySelector('.sim-add-area');
   const placeRows=document.querySelectorAll('.sim-card .sim-place-row');
   if(isHoliday){
     banner.style.display='block';
     btn.style.borderColor='var(--blue)';btn.style.color='var(--blue)';btn.textContent='✓ 休日';
-    // 入力エリアを隠す
     if(addArea)addArea.style.display='none';
     placeRows.forEach(r=>r.style.display='none');
     simInputEls.forEach(el=>{if(el)el.style.display='none';});
+    odoDisplays.forEach(el=>{if(el)el.style.display='none';});
   } else {
     banner.style.display='none';
     btn.style.borderColor='var(--border)';btn.style.color='var(--muted)';btn.textContent='🏖 休日';
     if(addArea)addArea.style.display='block';
     placeRows.forEach(r=>r.style.display='flex');
     simInputEls.forEach(el=>{if(el)el.style.display='';});
+    odoDisplays.forEach(el=>{if(el)el.style.display='';});
   }
 }
 
@@ -1691,16 +1896,14 @@ function saveCurrentSimDay(){
   const startEl = document.getElementById('sim-start');
   const dpEl = document.getElementById('sim-depart-place');
   const apEl = document.getElementById('sim-arrive-place');
-  const osEl = document.getElementById('sim-odo-start');
-  const oeEl = document.getElementById('sim-odo-end');
   const existing = simPlans[dk]||{};
   simPlans[dk] = {
     tasks: simTasks.map(t=>({...t})),
     startTime: startEl?startEl.value:'08:00',
     departPlace: dpEl?dpEl.value:'',
     arrivePlace: apEl?apEl.value:'',
-    odoStart: osEl?osEl.value:'',
-    odoEnd: oeEl?oeEl.value:'',
+    odoStart: odoSet.start?String(getOdoFromDrums('start')):'',
+    odoEnd: odoSet.end?String(getOdoFromDrums('end')):'',
     confirmed: existing.confirmed||false,
     holiday: existing.holiday||false,
     sleepValid: existing.sleepValid,
@@ -2809,8 +3012,8 @@ function simUpdate(){
     '<span style="margin-left:10px;color:var(--muted);font-size:9px">（翌日始業可能 '+nextStartStr+'〜）</span>';
 
   // オドメーター表示
-  const odoS=parseFloat(document.getElementById('sim-odo-start')?.value)||0;
-  const odoE=parseFloat(document.getElementById('sim-odo-end')?.value)||0;
+  const odoS=odoSet.start?getOdoFromDrums('start'):0;
+  const odoE=odoSet.end?getOdoFromDrums('end'):0;
   const odoRow=document.getElementById('ss-odo-row');
   if(odoS>0||odoE>0){
     odoRow.style.display='grid';
@@ -3175,6 +3378,18 @@ async function initOpening(){
 
 // ===== チェンジログ =====
 const CHANGELOG=[
+  {ver:'1.14.0',date:'2026-03-21',changes:[
+    '【ODOドラムピッカー実装】',
+    '  - 出庫距離・帰庫距離のテキスト入力を廃止、7桁ドラム式ピッカーに変更',
+    '  - タップで展開、桁ごとにスワイプで数値選択、カンマ区切り表示',
+    '  - 0〜9,999,999km対応（100万キロ超の車両にも対応）',
+    '【前日→当日の自動連動】',
+    '  - 出庫距離の初期値に直近の帰庫距離を自動セット',
+    '  - 帰庫距離のデフォルトは出庫距離と同値（微調整のみで済む）',
+    '【休日またぎの距離引き継ぎ】',
+    '  - 休日をスキップして最大30日遡り、直近の確定帰庫距離を自動参照',
+    '  - 場所の遡り参照も同様に休日スキップ対応',
+  ]},
   {ver:'1.13.3',date:'2026-03-20',changes:[
     'オープニング画面に氏名・ドライバーID・車番の入力欄追加',
     'オープニングと設定パネルのプロフィール欄を双方向同期',
@@ -3409,7 +3624,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.13.3',
+    version:'1.14.0',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
