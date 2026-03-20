@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.13.0</title>
+<title>SELMANE v1.13.2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -539,7 +539,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div style="text-align:center;margin-bottom:32px">
     <div id="op-appname" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--c-depart);line-height:1">SELMANE</div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px">SELF MANAGEMENT FOR DRIVERS</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.13.0</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.13.2</div>
   </div>
 
   <!-- 日付 -->
@@ -578,7 +578,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.13.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.13.2</div>
 <div id="profile-bar" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--s1);border-radius:8px;display:flex;justify-content:space-between"></div>
 
 <!-- モード切替タブ -->
@@ -733,6 +733,13 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <div class="sim-start-row">
       <label>出庫時刻</label>
       <input type="time" class="sim-time-input" id="sim-start" value="08:00" oninput="simUpdate();saveCurrentSimDay()">
+      <button id="holiday-btn" onclick="toggleHoliday()" style="background:none;border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--muted);font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;white-space:nowrap;transition:all .12s">🏖 休日</button>
+    </div>
+    <div id="holiday-banner" style="display:none;background:rgba(52,152,219,.1);border:2px solid var(--blue);border-radius:12px;padding:16px;text-align:center;margin-bottom:11px">
+      <div style="font-size:24px;margin-bottom:6px">🏖</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--blue);letter-spacing:2px">REST DAY</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">この日は休日として確定されています</div>
+      <button onclick="toggleHoliday()" style="margin-top:10px;background:none;border:1px solid var(--border);border-radius:8px;padding:7px 16px;color:var(--muted);font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer">休日を取り消す</button>
     </div>
     <div class="sim-place-row" style="margin-bottom:14px">
       <label>📍 出庫場所</label>
@@ -829,6 +836,12 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <button id="confirm-btn" onclick="confirmDay()" style="width:100%;margin-top:10px;background:rgba(0,212,255,.15);border:2px solid var(--c-depart);border-radius:10px;padding:12px;color:var(--c-depart);font-size:14px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer">✔ 帰庫確定</button>
     <div id="confirmed-badge" style="display:none;text-align:center;padding:10px;margin-top:10px;border-radius:10px;font-size:13px;font-weight:700;font-family:'Noto Sans JP',sans-serif">✔ 確定済み</div>
     <button id="unconfirm-btn" onclick="unconfirmDay()" style="display:none;width:100%;margin-top:6px;background:none;border:1px solid var(--border);border-radius:8px;padding:7px;color:var(--muted);font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer">確定を取り消す</button>
+  </div>
+
+  <!-- メモ帳 -->
+  <div class="sim-card" id="sim-memo-card">
+    <div class="sim-card-title">📝 メモ帳</div>
+    <textarea id="sim-day-memo" style="width:100%;min-height:80px;background:var(--s2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;color:var(--text);font-size:13px;font-family:'Noto Sans JP',sans-serif;resize:vertical;line-height:1.7" placeholder="イレギュラーな出来事、渋滞箇所や法令遵守が難しかった理由など" oninput="saveCurrentSimDay()"></textarea>
   </div>
 </div><!-- /sim-section -->
 
@@ -1297,18 +1310,29 @@ function renderWeekNav(){
     }
 
     const isConfDay=plan&&plan.confirmed;
+    const isHolidayDay=plan&&plan.holiday;
     const btn = document.createElement('button');
     let cls = 'wdb';
     if(isToday) cls += ' today';
     if(isActive) cls += ' active';
     if(plan && plan.tasks.length) cls += ' has-data';
-    if(totalMin > 16*60) cls += ' over-day';
-    else if(totalMin > 15*60) cls += ' warn-day';
-    else if(totalMin > 13*60) cls += ' warn-day';
+    if(!isHolidayDay){
+      if(totalMin > 16*60) cls += ' over-day';
+      else if(totalMin > 15*60) cls += ' warn-day';
+      else if(totalMin > 13*60) cls += ' warn-day';
+    }
     btn.className = cls;
     const confMark=isConfDay?'✓':'';
-    const durColor=totalMin>16*60?'var(--over)':totalMin>13*60?'var(--warn)':totalMin>0?(isConfDay?'var(--ok)':'var(--text)'):'var(--muted)';
-    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${durColor}">${totalMin>0?(confMark+fmtHM(totalMin*60)):'--'}</span>`;
+    let durLabel,durColor;
+    if(isHolidayDay){
+      durLabel='🏖';durColor='var(--blue)';
+    } else if(totalMin>0){
+      durColor=totalMin>16*60?'var(--over)':totalMin>13*60?'var(--warn)':(isConfDay?'var(--ok)':'var(--text)');
+      durLabel=confMark+fmtHM(totalMin*60);
+    } else {
+      durLabel='--';durColor='var(--muted)';
+    }
+    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${durColor}">${durLabel}</span>`;
     btn.onclick = ()=>{ currentSimDate=new Date(d); loadSimDay(dk); renderWeekNav(); };
     container.appendChild(btn);
   }
@@ -1549,15 +1573,21 @@ function countWeekReal15hOverDays(){
 // 日付切り替え時にその日のプランを読み込む
 
 // ===== 2日平均ヘルパー =====
-// 確定済みプランなら実際の運転時間、未確定なら休みとみなし9h想定
+// 確定済みプランなら実際の運転時間、休日なら0h、未確定なら9h想定
 function getDayDriveMin(d){
   const plan=simPlans[simDayKey(d)];
-  if(!plan||!plan.confirmed) return 9*60; // 未確定=休み想定→9h
+  if(!plan) return 9*60;
+  if(plan.holiday) return 0; // 休日確定=運転0h
+  if(!plan.confirmed) return 9*60; // 未確定=9h想定
   return plan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
 }
 function isDayConfirmed(d){
   const plan=simPlans[simDayKey(d)];
-  return plan&&plan.confirmed;
+  return plan&&(plan.confirmed||plan.holiday);
+}
+function isDayHoliday(d){
+  const plan=simPlans[simDayKey(d)];
+  return plan&&plan.holiday;
 }
 function loadSimDay(dk){
   const plan = simPlans[dk] || {tasks:[], startTime:'08:00', departPlace:'', arrivePlace:'', odoStart:'', odoEnd:''};
@@ -1585,7 +1615,55 @@ function loadSimDay(dk){
   if(dpEl) dpEl.value = depVal;
   if(osEl) osEl.value = odoStartVal;
   editingIdx=-1;
+  // メモ読み込み
+  const memoEl=document.getElementById('sim-day-memo');
+  if(memoEl) memoEl.value=plan.dayMemo||'';
+  // 休日状態の表示切り替え
+  updateHolidayDisplay(plan.holiday);
   simUpdate();
+}
+
+function updateHolidayDisplay(isHoliday){
+  const banner=document.getElementById('holiday-banner');
+  const btn=document.getElementById('holiday-btn');
+  // 入力カード内の要素群
+  const simInputEls=['sim-depart-place','sim-odo-start','sim-arrive-card','sim-tasklist-card'].map(id=>document.getElementById(id));
+  const addArea=document.querySelector('.sim-add-area');
+  const placeRows=document.querySelectorAll('.sim-card .sim-place-row');
+  if(isHoliday){
+    banner.style.display='block';
+    btn.style.borderColor='var(--blue)';btn.style.color='var(--blue)';btn.textContent='✓ 休日';
+    // 入力エリアを隠す
+    if(addArea)addArea.style.display='none';
+    placeRows.forEach(r=>r.style.display='none');
+    simInputEls.forEach(el=>{if(el)el.style.display='none';});
+  } else {
+    banner.style.display='none';
+    btn.style.borderColor='var(--border)';btn.style.color='var(--muted)';btn.textContent='🏖 休日';
+    if(addArea)addArea.style.display='block';
+    placeRows.forEach(r=>r.style.display='flex');
+    simInputEls.forEach(el=>{if(el)el.style.display='';});
+  }
+}
+
+function toggleHoliday(){
+  const dk=simDayKey(currentSimDate);
+  const plan=simPlans[dk]||{tasks:[],startTime:'08:00'};
+  if(plan.holiday){
+    // 休日取り消し
+    plan.holiday=false;
+    plan.confirmed=false;
+  } else {
+    // 休日確定
+    if(simTasks.length>0&&!confirm('タスクがあるけど休日にしてええ？タスクは残るけど休日扱いになるで。'))return;
+    plan.holiday=true;
+    plan.confirmed=false;
+  }
+  simPlans[dk]=plan;
+  saveSimPlans();
+  updateHolidayDisplay(plan.holiday);
+  simUpdate();
+  renderWeekNav();
 }
 
 // 現在のシミュデータを保存
@@ -1604,7 +1682,12 @@ function saveCurrentSimDay(){
     arrivePlace: apEl?apEl.value:'',
     odoStart: osEl?osEl.value:'',
     odoEnd: oeEl?oeEl.value:'',
-    confirmed: existing.confirmed||false
+    confirmed: existing.confirmed||false,
+    holiday: existing.holiday||false,
+    sleepValid: existing.sleepValid,
+    sleepInvalidMin: existing.sleepInvalidMin||0,
+    nextDayAvgOk: existing.nextDayAvgOk,
+    dayMemo: document.getElementById('sim-day-memo')?.value||''
   };
   // 地点履歴を記録
   const dpVal=(dpEl?dpEl.value:'').trim();
@@ -2748,8 +2831,10 @@ function simUpdate(){
 
   // 運転時間チェックのメッセージ
   let driveMsg='',driveOk=false,driveWarn=false;
-  const prevLabel=prevConf?fmtHM(prevDriveMin*60):'休(9h想定)';
-  const nextLabel=nextConf?fmtHM(nextDriveMin*60):'未確定(9h想定)';
+  const prevIsHoliday=isDayHoliday(prevDay);
+  const nextIsHoliday=isDayHoliday(nextDay);
+  const prevLabel=prevIsHoliday?'休日(0h)':prevConf?fmtHM(prevDriveMin*60):'未確定(9h想定)';
+  const nextLabel=nextIsHoliday?'休日(0h)':nextConf?fmtHM(nextDriveMin*60):'未確定(9h想定)';
   if(eitherOk){
     driveOk=true;
     const parts=[];
@@ -3066,6 +3151,22 @@ async function initOpening(){
 
 // ===== チェンジログ =====
 const CHANGELOG=[
+  {ver:'1.13.2',date:'2026-03-20',changes:[
+    '帰庫確定カード下に「📝 メモ帳」機能を追加',
+    'イレギュラーな出来事、渋滞箇所、法令遵守困難な理由等を日別に記録可能',
+    'メモ内容はlocalStorageに日別保存、日付切替で自動読み込み',
+    'PDF週間レポートにメモ内容を青枠付きで出力（エビデンス対応）',
+  ]},
+  {ver:'1.13.1',date:'2026-03-20',changes:[
+    '出庫時刻横に「休日確定」ボタン追加',
+    '休日確定でREST DAYバナー表示、入力エリア非表示に',
+    '休日取り消し機能',
+    '休日は運転0h確定として2日平均計算に反映（9h想定→0hに）',
+    '2日平均のラベルに「休日(0h)」表示対応',
+    '週間ナビの日別ボタンに🏖マーク表示',
+    'PDF週間レポートに「🏖 休日」表示',
+    'saveCurrentSimDayでholiday/sleepValid等のフラグ保持',
+  ]},
   {ver:'1.13.0',date:'2026-03-20',changes:[
     '【プロフィール・車両情報】',
     '  - 設定パネルに氏名・ドライバーID・車両番号の入力欄追加',
@@ -3263,7 +3364,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.13.0',
+    version:'1.13.2',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
@@ -3546,7 +3647,12 @@ function exportWeekPDF(){
         html+=`</div>`;
       }
     } else {
-      html+=`<div style="font-size:11px;color:#aaa;font-family:'DM Mono',monospace;padding:8px 0">記録なし</div>`;
+      const dayIsHoliday=dd.plan.holiday;
+      html+=`<div style="font-size:11px;color:${dayIsHoliday?'#3498db':'#aaa'};font-family:'DM Mono',monospace;padding:8px 0">${dayIsHoliday?'🏖 休日':'記録なし'}</div>`;
+    }
+    // メモ帳の内容
+    if(dd.plan.dayMemo){
+      html+=`<div style="margin-top:6px;padding:8px 10px;background:#f8f8f8;border-left:3px solid #3498db;border-radius:0 6px 6px 0;font-size:10px;color:#444;font-family:'Noto Sans JP',sans-serif;line-height:1.7">📝 <strong>メモ:</strong> ${dd.plan.dayMemo.replace(/\n/g,'<br>')}</div>`;
     }
     html+=`</div>`;
   });
