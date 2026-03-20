@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.14.0</title>
+<title>SELMANE v1.14.2</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -561,7 +561,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div style="text-align:center;margin-bottom:32px">
     <div id="op-appname" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--c-depart);line-height:1">SELMANE</div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px">SELF MANAGEMENT FOR DRIVERS</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.14.0</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.14.2</div>
   </div>
 
   <!-- 日付 -->
@@ -619,7 +619,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.14.0</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.14.2</div>
 <div id="profile-bar" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--s1);border-radius:8px;display:flex;justify-content:space-between"></div>
 
 <!-- モード切替タブ -->
@@ -3125,14 +3125,18 @@ function simUpdate(){
     const hasViolation=isRealOver||bothNG||maxCont>240||totalWeek15h>2;
     const needsAttention=isSpecial||isWarn||(!eitherOk)||driveMin>9*60;
     // 翌日注意の内容を構築
-    let attentionDetail='';
-    if(!nextConf&&driveMin>9*60){
-      attentionDetail=`翌日の運転: ${fmtHM(nextMaxForOk*60)}以下で平均OK`;
-    }
-    if(!prevAvgOk&&!nextAvgOk) attentionDetail='前後いずれとも平均9h超';
+    let attentionDetails=[];
+    if(isSpecial) attentionDetails.push('16h特例適用');
+    if(isWarn) attentionDetails.push('拘束13h超');
+    if(driveMin>9*60&&!nextConf) attentionDetails.push('翌日運転'+fmtHM(nextMaxForOk*60)+'以下で平均OK');
+    if(driveMin>9*60&&nextConf&&!nextAvgOk) attentionDetails.push('翌日比平均9h超');
+    if(!prevAvgOk) attentionDetails.push('前日比平均9h超');
+    if(bothNG) attentionDetails.push('前後いずれも平均超過');
+    const attentionDetail=attentionDetails.join('／');
     const confirmedClass=hasViolation?'confirmed-over':needsAttention?'confirmed-warn':'confirmed-ok';
     result.className='sim-result on '+confirmedClass;
     let statusLabel=hasViolation?' — 🚨 違反あり':needsAttention?' — ⚠ 翌日注意':' — ✅ 問題なし';
+    if(needsAttention&&attentionDetail&&!hasViolation) statusLabel+='（'+attentionDetail+'）';
     document.getElementById('srt').textContent='CONFIRMED RESULT'+statusLabel;
     let endInfo='終了時間: '+endTimeStr+' （'+fmtHM(totalSec)+'）'+
       '<span style="margin-left:10px;color:var(--muted);font-size:9px">（翌日始業可能 '+nextStartStr+'〜）</span>';
@@ -3378,6 +3382,18 @@ async function initOpening(){
 
 // ===== チェンジログ =====
 const CHANGELOG=[
+  {ver:'1.14.2',date:'2026-03-21',changes:[
+    'PDF週間レポートに「翌日注意」項目を日別に表示',
+    '  - 16h特例適用、拘束13h超、翌日運転上限、前日比平均超過、連続4h超等',
+    'PDF週間レポートに「前日注意クリア」情報を翌日に表示',
+    '  - 前日の「翌日運転○h以下で平均OK」→ 当日の実績で判定、クリア/未達を表示',
+    '  - 管理者が前後日の因果関係を一目で確認可能に',
+  ]},
+  {ver:'1.14.1',date:'2026-03-21',changes:[
+    '確定リザルトの「翌日注意」に具体的な注意内容を括弧書きで表示',
+    '注意内容: 16h特例適用、拘束13h超、翌日運転上限、前日比平均超過など',
+    '複数の注意がある場合は「／」区切りで列挙',
+  ]},
   {ver:'1.14.0',date:'2026-03-21',changes:[
     '【ODOドラムピッカー実装】',
     '  - 出庫距離・帰庫距離のテキスト入力を廃止、7桁ドラム式ピッカーに変更',
@@ -3624,7 +3640,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.14.0',
+    version:'1.14.2',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
@@ -3731,6 +3747,49 @@ function exportWeekPDF(){
     const distKm=(odoS2>0&&odoE2>odoS2)?Math.round(odoE2-odoS2):0;
     dayData.push({d,dk,plan,tasks,totalMin,driveMin,maxCont,startTimeStr,endTimeStr:endTimeStr2,departPlace:plan.departPlace||'',arrivePlace:plan.arrivePlace||'',odoStart:odoS2,odoEnd:odoE2,distKm});
   }
+
+  // 2パス目: 各日の翌日注意・前日クリア情報を計算
+  dayData.forEach((dd,i)=>{
+    dd.attentionItems=[];
+    dd.clearItems=[];
+    if(!dd.tasks.length)return;
+    const isSpecialD=dd.totalMin>15*60&&dd.totalMin<=16*60;
+    const isWarnD=dd.totalMin>13*60&&dd.totalMin<=15*60;
+    // 前日との平均
+    const prevDD=i>0?dayData[i-1]:null;
+    const prevDrv=prevDD&&prevDD.tasks.length?prevDD.driveMin:(isDayConfirmed(new Date(dd.d.getTime()-86400000))?getDayDriveMin(new Date(dd.d.getTime()-86400000)):9*60);
+    const avgPrev=(prevDrv+dd.driveMin)/2;
+    const prevAvgOkD=avgPrev<=9*60;
+    // 翌日との平均
+    const nextDD=i<dayData.length-1?dayData[i+1]:null;
+    const nextDrv=nextDD&&nextDD.tasks.length?nextDD.driveMin:9*60;
+    const nextConf2=nextDD&&nextDD.plan.confirmed;
+    const avgNext=(dd.driveMin+nextDrv)/2;
+    const nextAvgOkD=avgNext<=9*60;
+    const nextMaxD=18*60-dd.driveMin;
+
+    // 翌日注意項目
+    if(isSpecialD) dd.attentionItems.push('16h特例適用');
+    if(isWarnD) dd.attentionItems.push('拘束13h超');
+    if(dd.driveMin>9*60&&!nextConf2) dd.attentionItems.push('翌日運転'+fmtHM(nextMaxD*60)+'以下で平均OK');
+    if(!prevAvgOkD) dd.attentionItems.push('前日比平均9h超('+fmtHM(avgPrev*60)+')');
+    if(dd.maxCont>4*60) dd.attentionItems.push('連続運転4h超');
+
+    // 前日クリア情報（前日に注意があった場合、当日で解消されたか）
+    if(prevDD&&prevDD.attentionItems){
+      prevDD.attentionItems.forEach(item=>{
+        if(item.includes('翌日運転')&&item.includes('以下で平均OK')){
+          // 当日の運転時間で前日との平均がOKになったか
+          const avgCheck=(prevDD.driveMin+dd.driveMin)/2;
+          if(avgCheck<=9*60){
+            dd.clearItems.push({prev:item,result:`実績${fmtHM(dd.driveMin*60)} → 平均${fmtHM(avgCheck*60)}`,ok:true});
+          } else {
+            dd.clearItems.push({prev:item,result:`実績${fmtHM(dd.driveMin*60)} → 平均${fmtHM(avgCheck*60)}`,ok:false});
+          }
+        }
+      });
+    }
+  });
 
   const isOverWeek=weekDriveMins>44*60;
   const isOverMonth=weekBoundMins>284*60/4; // 週換算目安
@@ -3913,6 +3972,18 @@ function exportWeekPDF(){
     // メモ帳の内容
     if(dd.plan.dayMemo){
       html+=`<div style="margin-top:6px;padding:8px 10px;background:#f8f8f8;border-left:3px solid #3498db;border-radius:0 6px 6px 0;font-size:10px;color:#444;font-family:'Noto Sans JP',sans-serif;line-height:1.7">📝 <strong>メモ:</strong> ${dd.plan.dayMemo.replace(/\n/g,'<br>')}</div>`;
+    }
+    // 前日クリア情報
+    if(dd.clearItems&&dd.clearItems.length>0){
+      dd.clearItems.forEach(ci=>{
+        const color=ci.ok?'#2ecc71':'#e74c3c';
+        const icon=ci.ok?'✅':'❌';
+        html+=`<div style="margin-top:4px;padding:6px 10px;background:${ci.ok?'#eafaf1':'#fdecea'};border-left:3px solid ${color};border-radius:0 6px 6px 0;font-size:10px;font-family:'DM Mono',monospace;color:#444">${icon} <strong>前日注意クリア:</strong> ${ci.prev} → ${ci.result} ${ci.ok?'✓':'✗'}</div>`;
+      });
+    }
+    // 翌日注意
+    if(dd.attentionItems&&dd.attentionItems.length>0&&dd.plan.confirmed){
+      html+=`<div style="margin-top:4px;padding:6px 10px;background:#fef9e7;border-left:3px solid #f39c12;border-radius:0 6px 6px 0;font-size:10px;font-family:'DM Mono',monospace;color:#856404">⚠ <strong>翌日注意:</strong> ${dd.attentionItems.join('／')}</div>`;
     }
     html+=`</div>`;
   });
