@@ -283,6 +283,14 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .drum::after{bottom:0;background:linear-gradient(to top,var(--s1) 0%,transparent 100%)}
 .drum-sel-line{position:absolute;top:37px;left:4px;right:4px;height:36px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);pointer-events:none;z-index:1;border-radius:4px;background:rgba(0,212,255,.06)}
 .drum-unit{font-size:12px;color:var(--muted);font-family:'DM Mono',monospace}
+.time-mode-toggle{display:flex;gap:4px;margin-bottom:9px}
+.tmt-btn{flex:1;padding:6px 4px;border-radius:7px;border:1.5px solid var(--border);background:none;color:var(--muted);font-size:11px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:center;transition:all .12s}
+.tmt-btn.active{border-color:var(--c-depart);color:var(--c-depart);background:rgba(0,212,255,.08)}
+.tmt-btn:active{transform:scale(.97)}
+.clock-drum-wrap{display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:9px}
+.clock-drum-label{font-size:10px;color:var(--muted);font-family:'DM Mono',monospace;width:100%;margin-bottom:2px}
+.clock-drum-sep{font-size:14px;color:var(--muted);font-family:'DM Mono',monospace;margin:0 1px}
+.clock-drum-arrow{font-size:14px;color:var(--c-depart);font-family:'DM Mono',monospace;margin:0 6px}
 .sim-checks{display:flex;flex-direction:column;gap:0;margin-top:10px;border-top:1px solid var(--border)}
 .scr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
 .scr:last-child{border-bottom:none}
@@ -639,6 +647,10 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     <div class="sim-add-area">
       <div class="sat">＋ タスクを追加</div>
       <div class="sim-task-btns" id="sim-task-btns"></div>
+      <div class="time-mode-toggle" id="main-time-toggle">
+        <button class="tmt-btn active" id="main-tmt-dur" onclick="setMainTimeMode('duration')">⏱ 所要時間</button>
+        <button class="tmt-btn" id="main-tmt-clock" onclick="setMainTimeMode('clock')">🕐 時刻指定</button>
+      </div>
       <div class="drum-wrap" id="drum-wrap-main">
         <label>予定時間</label>
         <div class="drum-picker">
@@ -647,6 +659,18 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
           <div class="drum" id="drum-m"><div class="drum-sel-line"></div><div class="drum-inner" id="drum-m-inner"></div></div>
           <span class="drum-unit">m</span>
         </div>
+      </div>
+      <div class="clock-drum-wrap" id="drum-wrap-clock" style="display:none">
+        <span class="clock-drum-label">開始</span>
+        <div class="drum" id="clock-sh"><div class="drum-sel-line"></div><div class="drum-inner" id="clock-sh-inner"></div></div>
+        <span class="clock-drum-sep">:</span>
+        <div class="drum" id="clock-sm"><div class="drum-sel-line"></div><div class="drum-inner" id="clock-sm-inner"></div></div>
+        <span class="clock-drum-arrow">→</span>
+        <span class="clock-drum-label">終了</span>
+        <div class="drum" id="clock-eh"><div class="drum-sel-line"></div><div class="drum-inner" id="clock-eh-inner"></div></div>
+        <span class="clock-drum-sep">:</span>
+        <div class="drum" id="clock-em"><div class="drum-sel-line"></div><div class="drum-inner" id="clock-em-inner"></div></div>
+        <div id="clock-calc" style="width:100%;font-family:'DM Mono',monospace;font-size:11px;color:var(--c-depart);margin-top:4px"></div>
       </div>
       <!-- マーカータスク用メモ -->
       <div id="marker-memo-area" style="display:none;margin-bottom:9px">
@@ -1128,6 +1152,7 @@ function renderWeekNav(){
     weekDriveMins += driveMin;
     weekBoundMins += totalMin;
 
+    const isConfDay=plan&&plan.confirmed;
     const btn = document.createElement('button');
     let cls = 'wdb';
     if(isToday) cls += ' today';
@@ -1137,7 +1162,9 @@ function renderWeekNav(){
     else if(totalMin > 15*60) cls += ' warn-day';
     else if(totalMin > 13*60) cls += ' warn-day';
     btn.className = cls;
-    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${totalMin>16*60?'var(--over)':totalMin>13*60?'var(--warn)':totalMin>0?'var(--ok)':'var(--muted)'}">${totalMin>0?fmtHM(totalMin*60):'--'}</span>`;
+    const confMark=isConfDay?'✓':'';
+    const durColor=totalMin>16*60?'var(--over)':totalMin>13*60?'var(--warn)':totalMin>0?(isConfDay?'var(--ok)':'var(--text)'):'var(--muted)';
+    btn.innerHTML = `<span class="wdb-day">${WEEK_DAYS_JP[d.getDay()]}</span><span style="font-family:'DM Mono',monospace;font-size:9px;color:inherit">${(d.getMonth()+1)+'/'+d.getDate()}</span><span class="wdb-dur" style="color:${durColor}">${totalMin>0?(confMark+fmtHM(totalMin*60)):'--'}</span>`;
     btn.onclick = ()=>{ currentSimDate=new Date(d); loadSimDay(dk); renderWeekNav(); };
     container.appendChild(btn);
   }
@@ -1256,6 +1283,18 @@ function countWeekReal15hOverDays(){
 }
 
 // 日付切り替え時にその日のプランを読み込む
+
+// ===== 2日平均ヘルパー =====
+// 確定済みプランなら実際の運転時間、未確定なら休みとみなし9h想定
+function getDayDriveMin(d){
+  const plan=simPlans[simDayKey(d)];
+  if(!plan||!plan.confirmed) return 9*60; // 未確定=休み想定→9h
+  return plan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
+}
+function isDayConfirmed(d){
+  const plan=simPlans[simDayKey(d)];
+  return plan&&plan.confirmed;
+}
 function loadSimDay(dk){
   const plan = simPlans[dk] || {tasks:[], startTime:'08:00', departPlace:'', arrivePlace:'', odoStart:'', odoEnd:''};
   simTasks = plan.tasks.map(t=>({...t}));
@@ -1354,6 +1393,67 @@ function initDrums(){
   setupDrumScroll('drum-m', M_VALS, ()=>drumM, v=>{drumM=v; scrollDrumTo('drum-m-inner',M_VALS,v);});
 }
 
+// ===== 時刻指定ドラム（メイン追加用） =====
+const CLOCK_H_VALS=Array.from({length:24},(_,i)=>i); // 0〜23
+let mainTimeMode='duration';
+let clockSH=8,clockSM=0,clockEH=9,clockEM=0;
+
+function setMainTimeMode(mode){
+  mainTimeMode=mode;
+  document.getElementById('main-tmt-dur').classList.toggle('active',mode==='duration');
+  document.getElementById('main-tmt-clock').classList.toggle('active',mode==='clock');
+  document.getElementById('drum-wrap-main').style.display=mode==='duration'?'flex':'none';
+  document.getElementById('drum-wrap-clock').style.display=mode==='clock'?'flex':'none';
+  if(mode==='clock'){
+    // デフォルト開始時刻＝最後のタスク終了時刻
+    const endMin=getTasksEndMin();
+    clockSH=Math.floor(endMin/60)%24;
+    clockSM=M_VALS.reduce((a,v)=>Math.abs(v-endMin%60)<Math.abs(a-endMin%60)?v:a,0);
+    clockEH=(clockSH+1)%24;
+    clockEM=clockSM;
+    initClockDrums();
+    updateClockCalc();
+  }
+}
+
+function getTasksEndMin(){
+  const startVal=document.getElementById('sim-start').value||'08:00';
+  const [sh,sm]=startVal.split(':').map(Number);
+  let cur=sh*60+sm;
+  simTasks.forEach(st=>{cur+=st.durationMin;});
+  return cur;
+}
+
+function initClockDrums(){
+  buildDrum('clock-sh-inner',CLOCK_H_VALS,clockSH);
+  buildDrum('clock-sm-inner',M_VALS,clockSM);
+  buildDrum('clock-eh-inner',CLOCK_H_VALS,clockEH);
+  buildDrum('clock-em-inner',M_VALS,clockEM);
+  setupDrumScroll('clock-sh',CLOCK_H_VALS,()=>clockSH,v=>{clockSH=v;scrollDrumTo('clock-sh-inner',CLOCK_H_VALS,v);updateClockCalc();});
+  setupDrumScroll('clock-sm',M_VALS,()=>clockSM,v=>{clockSM=v;scrollDrumTo('clock-sm-inner',M_VALS,v);updateClockCalc();});
+  setupDrumScroll('clock-eh',CLOCK_H_VALS,()=>clockEH,v=>{clockEH=v;scrollDrumTo('clock-eh-inner',CLOCK_H_VALS,v);updateClockCalc();});
+  setupDrumScroll('clock-em',M_VALS,()=>clockEM,v=>{clockEM=v;scrollDrumTo('clock-em-inner',M_VALS,v);updateClockCalc();});
+}
+
+function updateClockCalc(){
+  const startMin=clockSH*60+clockSM;
+  let endMin=clockEH*60+clockEM;
+  if(endMin<=startMin)endMin+=24*60;
+  const dur=endMin-startMin;
+  const el=document.getElementById('clock-calc');
+  if(el)el.textContent=`= ${Math.floor(dur/60)}h${p2(dur%60)}m（${p2(clockSH)}:${p2(clockSM)} → ${p2(clockEH)}:${p2(clockEM)}）`;
+}
+
+function getMainDurationMin(){
+  if(mainTimeMode==='clock'){
+    const startMin=clockSH*60+clockSM;
+    let endMin=clockEH*60+clockEM;
+    if(endMin<=startMin)endMin+=24*60;
+    return endMin-startMin;
+  }
+  return drumH*60+drumM;
+}
+
 function setupDrumScroll(drumId, vals, getVal, setVal){
   const drum=document.getElementById(drumId);
   let startY=0, startIdx=0, isDragging=false;
@@ -1428,11 +1528,26 @@ function simRenderTaskBtns(){
         document.getElementById('marker-memo-input').value='';
         document.getElementById('marker-memo-input').placeholder=t.id==='checkin'?'場所・点呼相手など（任意）':'メモ（任意）';
         document.getElementById('drum-wrap-main').style.display='none';
+        document.getElementById('drum-wrap-clock').style.display='none';
+        document.getElementById('main-time-toggle').style.display='none';
         return;
       }
       simSelTask=t.id;
       document.getElementById('marker-memo-area').style.display='none';
-      document.getElementById('drum-wrap-main').style.display='flex';
+      document.getElementById('main-time-toggle').style.display='flex';
+      if(mainTimeMode==='duration'){
+        document.getElementById('drum-wrap-main').style.display='flex';
+        document.getElementById('drum-wrap-clock').style.display='none';
+      } else {
+        document.getElementById('drum-wrap-main').style.display='none';
+        document.getElementById('drum-wrap-clock').style.display='flex';
+        // 時刻指定のデフォルト開始時刻を更新
+        const endMin=getTasksEndMin();
+        clockSH=Math.floor(endMin/60)%24;
+        clockSM=M_VALS.reduce((a,v)=>Math.abs(v-endMin%60)<Math.abs(a-endMin%60)?v:a,0);
+        clockEH=(clockSH+1)%24;clockEM=clockSM;
+        initClockDrums();updateClockCalc();
+      }
       // 休憩選択時はデフォルト30分
       if(t.id==='rest'){drumH=0;drumM=30;}
       else if(t.id==='sleep'){drumH=3;drumM=0;}
@@ -1512,7 +1627,11 @@ function simRenderList(){
       <button class="srem" onclick="event.stopPropagation();simRemove(${i})">✕</button>
       <div class="srow-edit-area" id="edit-area-${i}">
         <div class="sif-tasks" style="margin-bottom:8px">${TASKS.map(tk=>`<button class="sif-btn${tk.id===st.taskId?' sel':''}" ${tk.id===st.taskId?`style="border-color:${tk.color}"`:''}  onclick="event.stopPropagation();edChangeTask(${i},'${tk.id}','${tk.color}')"><span class="sif-icon">${tk.icon}</span>${tk.name}</button>`).join('')}</div>
-        <div class="srow-edit-top">
+        <div class="time-mode-toggle" id="ed-time-toggle-${i}" style="margin-bottom:6px">
+          <button class="tmt-btn active" id="ed-tmt-dur-${i}" onclick="event.stopPropagation();setEdTimeMode(${i},'duration')">⏱ 所要時間</button>
+          <button class="tmt-btn" id="ed-tmt-clock-${i}" onclick="event.stopPropagation();setEdTimeMode(${i},'clock')">🕐 時刻指定</button>
+        </div>
+        <div class="srow-edit-top" id="ed-dur-row-${i}">
           <div class="srow-drum-wrap">
             <div class="srow-drum" id="ed-h-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-hi-${i}"></div></div>
             <span class="srow-unit">h</span>
@@ -1524,6 +1643,24 @@ function simRenderList(){
           <input class="srow-place-input" id="ed-from-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}">
           <input class="srow-place-input" id="ed-to-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">
           `:`<input class="srow-place-input" id="ed-place-${i}" placeholder="📍 場所" value="${st.place||''}">`}
+          </div>
+        </div>
+        <div class="srow-edit-top" id="ed-clock-row-${i}" style="display:none">
+          <div class="srow-drum-wrap">
+            <div class="srow-drum" id="ed-csh-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-cshi-${i}"></div></div>
+            <span class="srow-unit">:</span>
+            <div class="srow-drum" id="ed-csm-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-csmi-${i}"></div></div>
+            <span class="srow-unit" style="margin:0 3px">→</span>
+            <div class="srow-drum" id="ed-ceh-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-cehi-${i}"></div></div>
+            <span class="srow-unit">:</span>
+            <div class="srow-drum" id="ed-cem-${i}"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="ed-cemi-${i}"></div></div>
+          </div>
+          <div id="ed-clock-calc-${i}" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--c-depart);margin-top:2px"></div>
+          <div id="ed-place-area2-${i}">
+          ${isDrive?`
+          <input class="srow-place-input" id="ed-from2-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}">
+          <input class="srow-place-input" id="ed-to2-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">
+          `:`<input class="srow-place-input" id="ed-place2-${i}" placeholder="📍 場所" value="${st.place||''}">`}
           </div>
         </div>
         <div class="srow-edit-btns">
@@ -1563,12 +1700,43 @@ function simRenderList(){
     if(!t?.isMarker){
     buildRowDrum(`ed-hi-${i}`, `ed-h-${i}`, H_VALS, Math.floor(st.durationMin/60), i, 'h');
     buildRowDrum(`ed-mi-${i}`, `ed-m-${i}`, M_VALS, M_VALS.reduce((a,v)=>Math.abs(v-st.durationMin%60)<Math.abs(a-st.durationMin%60)?v:a,0), i, 'm');
+    // クロックドラム初期化（タスクの実際の開始・終了時刻）
+    const edSH=startH, edSM=M_VALS.reduce((a,v)=>Math.abs(v-startM)<Math.abs(a-startM)?v:a,0);
+    const edEH=endH, edEM=M_VALS.reduce((a,v)=>Math.abs(v-endM)<Math.abs(a-endM)?v:a,0);
+    buildRowDrum(`ed-cshi-${i}`,`ed-csh-${i}`,CLOCK_H_VALS,edSH,i,'csh');
+    buildRowDrum(`ed-csmi-${i}`,`ed-csm-${i}`,M_VALS,edSM,i,'csm');
+    buildRowDrum(`ed-cehi-${i}`,`ed-ceh-${i}`,CLOCK_H_VALS,edEH,i,'ceh');
+    buildRowDrum(`ed-cemi-${i}`,`ed-cem-${i}`,M_VALS,edEM,i,'cem');
     }
   });
 }
 
 let editingIdx = -1;
 const rowEditTask={};
+const rowEditTimeMode={};
+
+function setEdTimeMode(i,mode){
+  rowEditTimeMode[i]=mode;
+  const durBtn=document.getElementById(`ed-tmt-dur-${i}`);
+  const clkBtn=document.getElementById(`ed-tmt-clock-${i}`);
+  const durRow=document.getElementById(`ed-dur-row-${i}`);
+  const clkRow=document.getElementById(`ed-clock-row-${i}`);
+  if(durBtn)durBtn.classList.toggle('active',mode==='duration');
+  if(clkBtn)clkBtn.classList.toggle('active',mode==='clock');
+  if(durRow)durRow.style.display=mode==='duration'?'flex':'none';
+  if(clkRow)clkRow.style.display=mode==='clock'?'flex':'none';
+  if(mode==='clock')updateEdClockCalc(i);
+}
+
+function updateEdClockCalc(i){
+  const sh=rowDrumVals[`${i}-csh`]??0,sm=rowDrumVals[`${i}-csm`]??0;
+  const eh=rowDrumVals[`${i}-ceh`]??0,em=rowDrumVals[`${i}-cem`]??0;
+  let s=sh*60+sm,e=eh*60+em;
+  if(e<=s)e+=24*60;
+  const dur=e-s;
+  const el=document.getElementById(`ed-clock-calc-${i}`);
+  if(el)el.textContent=`= ${Math.floor(dur/60)}h${p2(dur%60)}m`;
+}
 
 function edChangeTask(i,tid,color){
   rowEditTask[i]=tid;
@@ -1577,16 +1745,18 @@ function edChangeTask(i,tid,color){
   area.querySelectorAll('.sif-btn').forEach(b=>{b.classList.remove('sel');b.style.borderColor='';});
   const sel=area.querySelector(`.sif-btn[onclick*="'${tid}'"]`);
   if(sel){sel.classList.add('sel');sel.style.borderColor=color;}
-  // 場所欄を切り替え
+  // 場所欄を切り替え（duration行とclock行両方）
   const isDrive=taskById(tid)?.isDrive;
-  const pa=document.getElementById(`ed-place-area-${i}`);
-  if(!pa)return;
   const st=simTasks[i];
-  if(isDrive){
-    pa.innerHTML=`<input class="srow-place-input" id="ed-from-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}"><input class="srow-place-input" id="ed-to-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">`;
-  } else {
-    pa.innerHTML=`<input class="srow-place-input" id="ed-place-${i}" placeholder="📍 場所" value="${st.place||''}">`;
-  }
+  ['','2'].forEach(suf=>{
+    const pa=document.getElementById(`ed-place-area${suf}-${i}`);
+    if(!pa)return;
+    if(isDrive){
+      pa.innerHTML=`<input class="srow-place-input" id="ed-from${suf}-${i}" placeholder="🚩 出発地" value="${st.placeFrom||''}"><input class="srow-place-input" id="ed-to${suf}-${i}" placeholder="🏁 目的地" value="${st.placeTo||''}">`;
+    } else {
+      pa.innerHTML=`<input class="srow-place-input" id="ed-place${suf}-${i}" placeholder="📍 場所" value="${st.place||''}">`;
+    }
+  });
 }
 
 function simToggleEdit(i){
@@ -1607,30 +1777,43 @@ function simCancelEdit(i){
   const rows=document.querySelectorAll('.srow');
   if(rows[i])rows[i].classList.remove('editing');
   delete rowEditTask[i];
+  delete rowEditTimeMode[i];
   editingIdx=-1;
 }
 
 function simSaveEdit(i){
   const newTaskId=rowEditTask[i]||simTasks[i].taskId;
   const t=taskById(newTaskId);
-  const h=rowDrumVals[`${i}-h`]??Math.floor(simTasks[i].durationMin/60);
-  const m=rowDrumVals[`${i}-m`]??simTasks[i].durationMin%60;
-  const newMin=h*60+m;
+  const isClockMode=rowEditTimeMode[i]==='clock';
+  let newMin;
+  if(isClockMode){
+    const sh=rowDrumVals[`${i}-csh`]??0,sm=rowDrumVals[`${i}-csm`]??0;
+    const eh=rowDrumVals[`${i}-ceh`]??0,em=rowDrumVals[`${i}-cem`]??0;
+    let s=sh*60+sm,e=eh*60+em;
+    if(e<=s)e+=24*60;
+    newMin=e-s;
+  } else {
+    const h=rowDrumVals[`${i}-h`]??Math.floor(simTasks[i].durationMin/60);
+    const m=rowDrumVals[`${i}-m`]??simTasks[i].durationMin%60;
+    newMin=h*60+m;
+  }
   if(newMin<=0){alert('時間を設定してな！');return;}
   simTasks[i].taskId=newTaskId;
   simTasks[i].durationMin=newMin;
+  const placeSuffix=isClockMode?'2':'';
   if(t?.isDrive){
-    simTasks[i].placeFrom=(document.getElementById(`ed-from-${i}`)?.value||'').trim();
-    simTasks[i].placeTo=(document.getElementById(`ed-to-${i}`)?.value||'').trim();
+    simTasks[i].placeFrom=(document.getElementById(`ed-from${placeSuffix}-${i}`)?.value||'').trim();
+    simTasks[i].placeTo=(document.getElementById(`ed-to${placeSuffix}-${i}`)?.value||'').trim();
     simTasks[i].place=simTasks[i].placeFrom+(simTasks[i].placeFrom&&simTasks[i].placeTo?' → ':'')+simTasks[i].placeTo;
     if(simTasks[i].placeFrom)recordPlace('ph_from',simTasks[i].placeFrom);
     if(simTasks[i].placeTo)recordPlace('ph_to',simTasks[i].placeTo);
   } else {
-    simTasks[i].place=(document.getElementById(`ed-place-${i}`)?.value||'').trim();
+    simTasks[i].place=(document.getElementById(`ed-place${placeSuffix}-${i}`)?.value||'').trim();
     simTasks[i].placeFrom='';simTasks[i].placeTo='';
     if(simTasks[i].place)recordPlace('ph_single',simTasks[i].place);
   }
   delete rowEditTask[i];
+  delete rowEditTimeMode[i];
   editingIdx=-1;
   simUpdate();
 }
@@ -1665,6 +1848,7 @@ function buildRowDrum(innerId, drumId, vals, current, rowIdx, type){
     inner.querySelectorAll('.srow-drum-item').forEach(el=>{
       el.classList.toggle('center',parseInt(el.dataset.val)===val);
     });
+    if(type.startsWith('c'))updateEdClockCalc(rowIdx);
   }
 
   const drum=document.getElementById(drumId);
@@ -1706,7 +1890,7 @@ function simAddTask(){
     document.getElementById('marker-memo-input').value='';
     simUpdate();return;
   }
-  const durationMin=drumH*60+drumM;
+  const durationMin=getMainDurationMin();
   if(durationMin<=0){alert('時間を設定してな！');return;}
   const isDrive=taskById(simSelTask)?.isDrive;
   let place='',placeFrom='',placeTo='';
@@ -1743,10 +1927,18 @@ function openInsertForm(idx){
   if(insertFormIdx===idx){insertFormIdx=-1;return;}
   insertFormIdx=idx;
 
-  // 前後タスクから地点参照
+  // 前後タスクから時刻と地点参照
   const prev=idx>0?simTasks[idx-1]:null;
   const next=idx<simTasks.length?simTasks[idx]:null;
   const prevPlace=prev?(prev.placeTo||prev.place||''):'';
+
+  // 挿入位置の開始時刻を計算
+  const startVal2=document.getElementById('sim-start').value||'08:00';
+  const [ssh,ssm]=startVal2.split(':').map(Number);
+  let insStartMin=ssh*60+ssm;
+  for(let j=0;j<idx;j++) insStartMin+=simTasks[j].durationMin;
+  const insStartH=Math.floor(insStartMin/60)%24;
+  const insStartM=M_VALS.reduce((a,v)=>Math.abs(v-insStartMin%60)<Math.abs(a-insStartMin%60)?v:a,0);
 
   const form=document.createElement('div');
   form.className='sim-insert-form';
@@ -1756,7 +1948,11 @@ function openInsertForm(idx){
   });
   form.innerHTML=`
     <div class="sif-tasks">${taskBtns}</div>
-    <div class="sif-dur-row">
+    <div class="time-mode-toggle" id="sif-time-toggle" style="margin-bottom:6px">
+      <button class="tmt-btn active" id="sif-tmt-dur" onclick="setSifTimeMode('duration')">⏱ 所要時間</button>
+      <button class="tmt-btn" id="sif-tmt-clock" onclick="setSifTimeMode('clock')">🕐 時刻指定</button>
+    </div>
+    <div class="sif-dur-row" id="sif-dur-row">
       <label>時間</label>
       <div class="srow-drum-wrap">
         <div class="srow-drum" id="sif-drum-h"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-drum-hi"></div></div>
@@ -1764,6 +1960,19 @@ function openInsertForm(idx){
         <div class="srow-drum" id="sif-drum-m"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-drum-mi"></div></div>
         <span class="srow-unit">m</span>
       </div>
+    </div>
+    <div class="sif-dur-row" id="sif-clock-row" style="display:none">
+      <label>開始</label>
+      <div class="srow-drum-wrap">
+        <div class="srow-drum" id="sif-clk-sh"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-clk-shi"></div></div>
+        <span class="srow-unit">:</span>
+        <div class="srow-drum" id="sif-clk-sm"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-clk-smi"></div></div>
+        <span class="srow-unit" style="margin:0 4px">→</span>
+        <div class="srow-drum" id="sif-clk-eh"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-clk-ehi"></div></div>
+        <span class="srow-unit">:</span>
+        <div class="srow-drum" id="sif-clk-em"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="sif-clk-emi"></div></div>
+      </div>
+      <div id="sif-clock-calc" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--c-depart);margin-top:4px"></div>
     </div>
     <div id="sif-place-area">
       <div class="sif-place-row">
@@ -1780,7 +1989,8 @@ function openInsertForm(idx){
   const btn=document.getElementById(`ins-btn-${idx}`);
   if(btn)btn.after(form);
   // ドラムロール初期化
-  sifDrumH=0;sifDrumM=30;
+  sifDrumH=0;sifDrumM=30;sifTimeMode='duration';
+  sifClockSH=insStartH;sifClockSM=insStartM;sifClockEH=(insStartH+1)%24;sifClockEM=insStartM;
   buildSifDrum('sif-drum-hi','sif-drum-h',H_VALS,sifDrumH,'h');
   buildSifDrum('sif-drum-mi','sif-drum-m',M_VALS,sifDrumM,'m');
 }
@@ -1793,6 +2003,48 @@ function closeInsertForm(){
 
 let sifSelTask=null;
 let sifDrumH=0,sifDrumM=30;
+let sifTimeMode='duration';
+let sifClockSH=8,sifClockSM=0,sifClockEH=9,sifClockEM=0;
+
+function setSifTimeMode(mode){
+  sifTimeMode=mode;
+  const durBtn=document.getElementById('sif-tmt-dur');
+  const clkBtn=document.getElementById('sif-tmt-clock');
+  if(durBtn)durBtn.classList.toggle('active',mode==='duration');
+  if(clkBtn)clkBtn.classList.toggle('active',mode==='clock');
+  const durRow=document.getElementById('sif-dur-row');
+  const clkRow=document.getElementById('sif-clock-row');
+  if(durRow)durRow.style.display=mode==='duration'?'flex':'none';
+  if(clkRow){
+    clkRow.style.display=mode==='clock'?'flex':'none';
+    if(mode==='clock'){
+      buildSifDrum('sif-clk-shi','sif-clk-sh',CLOCK_H_VALS,sifClockSH,'csh');
+      buildSifDrum('sif-clk-smi','sif-clk-sm',M_VALS,sifClockSM,'csm');
+      buildSifDrum('sif-clk-ehi','sif-clk-eh',CLOCK_H_VALS,sifClockEH,'ceh');
+      buildSifDrum('sif-clk-emi','sif-clk-em',M_VALS,sifClockEM,'cem');
+      updateSifClockCalc();
+    }
+  }
+}
+
+function updateSifClockCalc(){
+  const s=sifClockSH*60+sifClockSM;
+  let e=sifClockEH*60+sifClockEM;
+  if(e<=s)e+=24*60;
+  const dur=e-s;
+  const el=document.getElementById('sif-clock-calc');
+  if(el)el.textContent=`= ${Math.floor(dur/60)}h${p2(dur%60)}m`;
+}
+
+function getSifDurationMin(){
+  if(sifTimeMode==='clock'){
+    const s=sifClockSH*60+sifClockSM;
+    let e=sifClockEH*60+sifClockEM;
+    if(e<=s)e+=24*60;
+    return e-s;
+  }
+  return sifDrumH*60+sifDrumM;
+}
 
 function buildSifDrum(innerId,drumId,vals,current,type){
   const inner=document.getElementById(innerId);
@@ -1811,10 +2063,23 @@ function buildSifDrum(innerId,drumId,vals,current,type){
   const idx=vals.indexOf(current);
   inner.style.transform=`translateY(${-idx*ITEM_H}px)`;
 
+  function sifGetVal(tp){
+    if(tp==='h')return sifDrumH;if(tp==='m')return sifDrumM;
+    if(tp==='csh')return sifClockSH;if(tp==='csm')return sifClockSM;
+    if(tp==='ceh')return sifClockEH;if(tp==='cem')return sifClockEM;
+    return 0;
+  }
+  function sifSetVal(tp,val){
+    if(tp==='h')sifDrumH=val;else if(tp==='m')sifDrumM=val;
+    else if(tp==='csh')sifClockSH=val;else if(tp==='csm')sifClockSM=val;
+    else if(tp==='ceh')sifClockEH=val;else if(tp==='cem')sifClockEM=val;
+    if(tp.startsWith('c'))updateSifClockCalc();
+  }
+
   function moveTo(newIdx){
     const clamped=Math.max(0,Math.min(vals.length-1,newIdx));
     const val=vals[clamped];
-    if(type==='h')sifDrumH=val; else sifDrumM=val;
+    sifSetVal(type,val);
     inner.style.transform=`translateY(${-clamped*ITEM_H}px)`;
     inner.querySelectorAll('.srow-drum-item').forEach(el=>{
       el.classList.toggle('center',parseInt(el.dataset.val)===val);
@@ -1825,7 +2090,7 @@ function buildSifDrum(innerId,drumId,vals,current,type){
   if(!drum)return;
   let startY=0,startIdx2=0,isDrag=false;
   drum.addEventListener('touchstart',e=>{
-    startY=e.touches[0].clientY;startIdx2=vals.indexOf(type==='h'?sifDrumH:sifDrumM);
+    startY=e.touches[0].clientY;startIdx2=vals.indexOf(sifGetVal(type));
     isDrag=true;e.preventDefault();e.stopPropagation();
   },{passive:false});
   drum.addEventListener('touchmove',e=>{
@@ -1834,14 +2099,14 @@ function buildSifDrum(innerId,drumId,vals,current,type){
   },{passive:false});
   drum.addEventListener('touchend',e=>{isDrag=false;e.stopPropagation();});
   drum.addEventListener('mousedown',e=>{
-    startY=e.clientY;startIdx2=vals.indexOf(type==='h'?sifDrumH:sifDrumM);
+    startY=e.clientY;startIdx2=vals.indexOf(sifGetVal(type));
     isDrag=true;e.preventDefault();e.stopPropagation();
   });
   document.addEventListener('mousemove',e=>{if(!isDrag)return;moveTo(startIdx2+Math.round((startY-e.clientY)/ITEM_H));});
   document.addEventListener('mouseup',()=>{isDrag=false;});
   drum.addEventListener('wheel',e=>{
     e.preventDefault();e.stopPropagation();
-    moveTo(vals.indexOf(type==='h'?sifDrumH:sifDrumM)+(e.deltaY>0?1:-1));
+    moveTo(vals.indexOf(sifGetVal(type))+(e.deltaY>0?1:-1));
   },{passive:false});
 }
 
@@ -1855,15 +2120,30 @@ function sifSelectTask(el,tid,color){
     el.classList.add('sel');el.style.borderColor=color;
     const area=document.getElementById('sif-place-area');
     area.innerHTML=`<div class="sif-place-row"><label>💬 メモ</label><input type="text" class="sif-place place-input" id="sif-memo" placeholder="${tid==='checkin'?'場所・点呼相手など（任意）':'メモ（任意）'}"></div>`;
-    // ドラムを隠す
-    const durRow=el.closest('.sim-insert-form').querySelector('.sif-dur-row');
+    // ドラム・トグルを隠す
+    const form=el.closest('.sim-insert-form');
+    const durRow=form.querySelector('#sif-dur-row');
+    const clkRow=form.querySelector('#sif-clock-row');
+    const toggle=form.querySelector('#sif-time-toggle');
     if(durRow)durRow.style.display='none';
+    if(clkRow)clkRow.style.display='none';
+    if(toggle)toggle.style.display='none';
     return;
   }
   sifSelTask=tid;
-  // ドラム表示を復元
-  const durRow=el.closest('.sim-insert-form').querySelector('.sif-dur-row');
-  if(durRow)durRow.style.display='flex';
+  // トグルと現モードのドラムを表示復元
+  const form=el.closest('.sim-insert-form');
+  const toggle=form.querySelector('#sif-time-toggle');
+  const durRow=form.querySelector('#sif-dur-row');
+  const clkRow=form.querySelector('#sif-clock-row');
+  if(toggle)toggle.style.display='flex';
+  if(sifTimeMode==='duration'){
+    if(durRow)durRow.style.display='flex';
+    if(clkRow)clkRow.style.display='none';
+  } else {
+    if(durRow)durRow.style.display='none';
+    if(clkRow)clkRow.style.display='flex';
+  }
   el.closest('.sif-tasks').querySelectorAll('.sif-btn').forEach(b=>{
     b.classList.remove('sel');b.style.borderColor='';
   });
@@ -1904,7 +2184,7 @@ function doInsert(idx){
     sifSelTask=null;insertFormIdx=-1;
     simUpdate();return;
   }
-  const durationMin=sifDrumH*60+sifDrumM;
+  const durationMin=getSifDurationMin();
   if(durationMin<=0){alert('時間を設定してな！');return;}
   const isDrive=taskById(sifSelTask)?.isDrive;
   let place='',placeFrom='',placeTo='';
@@ -1924,6 +2204,9 @@ function doInsert(idx){
 
 function simClear(){
   simTasks=[];simSelTask=null;drumH=1;drumM=0;
+  mainTimeMode='duration';
+  document.getElementById('main-tmt-dur').classList.add('active');
+  document.getElementById('main-tmt-clock').classList.remove('active');
   initDrums();simRenderTaskBtns();simRenderList();
   document.getElementById('sim-result').className='sim-result';
   document.getElementById('place-drive').style.display='none';
@@ -1932,6 +2215,8 @@ function simClear(){
   document.getElementById('map-note').style.display='none';
   document.getElementById('marker-memo-area').style.display='none';
   document.getElementById('drum-wrap-main').style.display='flex';
+  document.getElementById('drum-wrap-clock').style.display='none';
+  document.getElementById('main-time-toggle').style.display='flex';
 }
 
 function getPrevPlace(){
@@ -1988,6 +2273,21 @@ function confirmDay(){
   plan.confirmed=true;
   simPlans[dk]=plan;
   saveSimPlans();
+
+  // 前日が確定済みなら、前日との平均を再評価して前日のステータスを更新
+  const prevDay=new Date(currentSimDate);prevDay.setDate(prevDay.getDate()-1);
+  const prevDk=simDayKey(prevDay);
+  const prevPlan=simPlans[prevDk];
+  if(prevPlan&&prevPlan.confirmed){
+    const prevDrive=prevPlan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
+    const todayDrive=simTasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0);
+    const avg=(prevDrive+todayDrive)/2;
+    // 前日のnextDayAvgOkフラグを更新
+    prevPlan.nextDayAvgOk=avg<=9*60;
+    simPlans[prevDk]=prevPlan;
+    saveSimPlans();
+  }
+
   simUpdate();
   renderWeekNav();
 }
@@ -2066,14 +2366,24 @@ function simUpdate(){
   document.getElementById('ss-r13').style.color=r13<=0?'var(--over)':r13<3600?'var(--warn)':'var(--ok)';
   document.getElementById('ss-r15').textContent=r15>0?fmtHM(r15):'超過';
   document.getElementById('ss-r15').style.color=r15<=0?(specialAvail?'#d35400':'var(--over)'):r15<3600?'var(--warn)':'var(--ok)';
-  const prevDay2=new Date(currentSimDate);prevDay2.setDate(prevDay2.getDate()-1);
-  const prevPlan2=simPlans[simDayKey(prevDay2)];
-  const hasPrev2=prevPlan2&&prevPlan2.tasks.length>0;
-  const prevDriveMin2=hasPrev2?prevPlan2.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
-  const maxDrive2=hasPrev2?18*60-prevDriveMin2:9*60;
+  const prevDay=new Date(currentSimDate);prevDay.setDate(prevDay.getDate()-1);
+  const prevConfirmed=isDayConfirmed(prevDay);
+  const prevDriveMin=getDayDriveMin(prevDay);
+  const avg2prev=(prevDriveMin+driveMin)/2;
+  const prevAvgOk=avg2prev<=9*60;
+  // 運転可能残: 前日比で18h-前日=今日上限
+  const maxDrive2=18*60-prevDriveMin;
   const driveRemain2=maxDrive2-driveMin;
+  // 翌日に9h以下にするための当日上限
+  const maxForNextOk=18*60-9*60; // 翌日9hなら当日9hまで
+  const driveRemainNext=maxForNextOk-driveMin; // 9*60 - driveMin
+
+  // 運転可能残の色: 前日比でアウト→赤、翌日9h下回る→黄、両方OK→青
+  let rdriveColor='var(--blue)';
+  if(driveRemain2<=0) rdriveColor='var(--over)';
+  else if(driveRemainNext<=0) rdriveColor='var(--warn)';
   document.getElementById('ss-rdrive').textContent=driveRemain2>=0?fmtHM(driveRemain2*60):'-'+fmtHM(Math.abs(driveRemain2)*60);
-  document.getElementById('ss-rdrive').style.color=driveRemain2<=0?'var(--over)':driveRemain2<=60?'var(--warn)':'var(--blue)';
+  document.getElementById('ss-rdrive').style.color=rdriveColor;
 
   // 16h特例行
   document.getElementById('ss-r16').textContent=r16>0?fmtHM(r16):'超過';
@@ -2137,22 +2447,39 @@ function simUpdate(){
 
   const checks=document.getElementById('sim-checks');checks.innerHTML='';
 
-  // 前日の運転時間を取得
-  const prevDay=new Date(currentSimDate);prevDay.setDate(prevDay.getDate()-1);
-  const prevPlan=simPlans[simDayKey(prevDay)];
-  const prevDriveMin=prevPlan?prevPlan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
-  // 翌日の運転時間を取得
+  // 翌日の運転時間（確定済みなら実データ、未確定なら9h想定）
   const nextDay=new Date(currentSimDate);nextDay.setDate(nextDay.getDate()+1);
-  const nextPlan=simPlans[simDayKey(nextDay)];
-  const nextDriveMin=nextPlan?nextPlan.tasks.filter(t=>taskById(t.taskId)?.isDrive).reduce((s,t)=>s+t.durationMin,0):0;
-  // 2日平均（前日＋当日、当日＋翌日）
-  const avg2prev=(prevDriveMin+driveMin)/2;
-  const avg2next=(driveMin+nextDriveMin)/2;
-  const avg2worst=Math.max(avg2prev,avg2next);
-  const avg2ok=avg2worst<=9*60;
-  const avg2both=avg2prev>9*60&&avg2next>9*60;
+  const nextDriveMin=getDayDriveMin(nextDay);
+  const prevConf=prevConfirmed;
+  const nextConf=isDayConfirmed(nextDay);
 
-  // 拘束時間チェックの判定メッセージ
+  // 2日平均（当日＋翌日）※前日との平均avg2prevは上で計算済み
+  const avg2next=(driveMin+nextDriveMin)/2;
+  const nextAvgOk=avg2next<=9*60;
+  const eitherOk=prevAvgOk||nextAvgOk;
+  const bothNG=!prevAvgOk&&!nextAvgOk;
+
+  // 翌日が最大何hなら平均OKになるか
+  const nextMaxForOk=18*60-driveMin; // 当日+翌日≦18hなら平均9h
+
+  // 運転時間チェックのメッセージ
+  let driveMsg='',driveOk=false,driveWarn=false;
+  const prevLabel=prevConf?fmtHM(prevDriveMin*60):'休(9h想定)';
+  const nextLabel=nextConf?fmtHM(nextDriveMin*60):'未確定(9h想定)';
+  if(eitherOk){
+    driveOk=true;
+    const parts=[];
+    if(prevAvgOk) parts.push('前日比✓'+fmtHM(avg2prev*60));
+    else parts.push('前日比✗'+fmtHM(avg2prev*60));
+    if(nextAvgOk) parts.push('翌日比✓'+fmtHM(avg2next*60));
+    else parts.push('翌日比✗'+fmtHM(avg2next*60));
+    driveMsg=parts.join(' / ');
+  } else {
+    driveMsg='前日比'+fmtHM(avg2prev*60)+'✗ / 翌日比'+fmtHM(avg2next*60)+'✗';
+    driveWarn=false; // both NG = over
+  }
+
+  // 拘束時間チェック
   let boundMsg,boundOk,boundWarnFlag;
   if(isOver16){
     boundMsg='16h超過！法令違反'; boundOk=false; boundWarnFlag=false;
@@ -2169,12 +2496,19 @@ function simUpdate(){
   const checkList=[
     {label:'拘束時間（13h/15h/特例16h）',val:fmtHM(totalSec),ok:boundOk,warn:boundWarnFlag,msg:boundMsg},
     {label:'16h特例（週2回まで）',val:totalWeek15h+'/2回',ok:totalWeek15h<=2,warn:totalWeek15h===2,msg:totalWeek15h>2?'週3回以上！違反':totalWeek15h===2?'上限到達':thisOver15?'適用中':'未使用'},
-    {label:'運転時間（2日平均9h以内）',val:fmtHM(driveMin*60),ok:avg2ok,warn:!avg2ok&&!avg2both,msg:avg2both?'前後とも9h超！違反':!avg2ok?'前日平均'+fmtHM(avg2prev*60)+'（注意）':'適正'},
+    {label:'運転時間（2日平均9h以内）',val:fmtHM(driveMin*60),ok:driveOk,warn:driveWarn,msg:driveMsg},
+    {label:`  前日(${prevLabel})との平均`,val:fmtHM(avg2prev*60),ok:prevAvgOk,warn:false,msg:prevAvgOk?'適正':'超過'},
+    {label:`  翌日(${nextLabel})との平均`,val:fmtHM(avg2next*60),ok:nextAvgOk,warn:!nextConf&&!nextAvgOk,msg:nextAvgOk?'適正':nextConf?'超過':'翌日'+fmtHM(nextMaxForOk*60)+'以下なら適正'},
     {label:'最大連続運転（4h以内）',val:fmtHM(maxCont*60),ok:maxCont<=240,warn:false,msg:maxCont>240?'4h超過！要休憩':'適正'},
   ];
   checkList.forEach(c=>{
     const row=document.createElement('div');row.className='scr';
     const badge=c.ok?'b-ok':c.warn?'b-warn':'b-over';
+    const isSubRow=c.label.startsWith('  ');
+    if(isSubRow){
+      row.style.paddingLeft='12px';
+      row.style.fontSize='10px';
+    }
     row.innerHTML=`<div class="scl">${c.label}</div><div class="scrr"><div class="scv">${c.val}</div><div class="sbadge ${badge}">${c.msg}</div></div>`;
     checks.appendChild(row);
   });
@@ -2186,14 +2520,28 @@ function simUpdate(){
   const confirmedBadge=document.getElementById('confirmed-badge');
   const unconfirmBtn=document.getElementById('unconfirm-btn');
   if(isConfirmed){
-    const hasViolation=isRealOver||(avg2prev>9*60&&avg2next>9*60)||maxCont>240||totalWeek15h>2;
-    const needsAttention=isSpecial||isWarn||(!avg2ok)||driveMin>9*60;
+    // 運転可能残を確定モードの色に更新
+    if(eitherOk){
+      document.getElementById('ss-rdrive').style.color='var(--ok)';
+    }
+    const hasViolation=isRealOver||bothNG||maxCont>240||totalWeek15h>2;
+    const needsAttention=isSpecial||isWarn||(!eitherOk)||driveMin>9*60;
+    // 翌日注意の内容を構築
+    let attentionDetail='';
+    if(!nextConf&&driveMin>9*60){
+      attentionDetail=`翌日の運転: ${fmtHM(nextMaxForOk*60)}以下で平均OK`;
+    }
+    if(!prevAvgOk&&!nextAvgOk) attentionDetail='前後いずれとも平均9h超';
     const confirmedClass=hasViolation?'confirmed-over':needsAttention?'confirmed-warn':'confirmed-ok';
     result.className='sim-result on '+confirmedClass;
-    document.getElementById('srt').textContent='CONFIRMED RESULT'+(hasViolation?' — 🚨 違反あり':needsAttention?' — ⚠ 翌日注意':' — ✅ 問題なし');
-    document.getElementById('sim-end-time').innerHTML=
-      '終了時間: '+endTimeStr+' （'+fmtHM(totalSec)+'）'+
+    let statusLabel=hasViolation?' — 🚨 違反あり':needsAttention?' — ⚠ 翌日注意':' — ✅ 問題なし';
+    document.getElementById('srt').textContent='CONFIRMED RESULT'+statusLabel;
+    let endInfo='終了時間: '+endTimeStr+' （'+fmtHM(totalSec)+'）'+
       '<span style="margin-left:10px;color:var(--muted);font-size:9px">（翌日始業可能 '+nextStartStr+'〜）</span>';
+    if(attentionDetail){
+      endInfo+='<div style="font-size:11px;color:var(--warn);margin-top:4px">⚠ '+attentionDetail+'</div>';
+    }
+    document.getElementById('sim-end-time').innerHTML=endInfo;
     confirmBtn.style.display='none';
     confirmedBadge.style.display='block';
     confirmedBadge.style.background=hasViolation?'rgba(231,76,60,.15)':needsAttention?'rgba(243,156,18,.15)':'rgba(52,152,219,.15)';
