@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.11.4</title>
+<title>SELMANE v1.12.1</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -231,6 +231,28 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .wcv{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.5px}
 .wcv.ok{color:var(--ok)}.wcv.warn{color:var(--warn)}.wcv.over{color:var(--over)}.wcv.muted{color:var(--muted)}
 .wc-badge{font-size:9px;font-family:'DM Mono',monospace;margin-top:1px}
+.wcb.tappable{cursor:pointer;transition:background .12s}
+.wcb.tappable:active{background:var(--s1)}
+/* 月拘束設定モーダル */
+.month-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:250}
+.month-modal-overlay.on{display:flex;align-items:center;justify-content:center}
+.month-modal{background:var(--s1);border-radius:16px;padding:20px;width:300px;max-height:80vh;overflow-y:auto}
+.mm-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--c-depart);margin-bottom:14px}
+.mm-section{margin-bottom:14px}
+.mm-label{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px}
+.mm-tabs{display:flex;gap:4px;margin-bottom:10px}
+.mm-tab{flex:1;padding:8px 4px;border-radius:8px;border:1.5px solid var(--border);background:none;color:var(--muted);font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;text-align:center;transition:all .12s}
+.mm-tab.active{border-color:var(--c-depart);color:var(--c-depart);background:rgba(0,212,255,.08)}
+.mm-check{display:flex;align-items:center;gap:10px;padding:10px;background:var(--s2);border-radius:8px;cursor:pointer;transition:all .12s}
+.mm-check:active{transform:scale(.98)}
+.mm-checkbox{width:20px;height:20px;border-radius:5px;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .12s}
+.mm-checkbox.checked{border-color:var(--ok);background:rgba(46,204,113,.15);color:var(--ok)}
+.mm-check-text{font-size:12px;color:var(--text)}
+.mm-check-sub{font-size:10px;color:var(--muted)}
+.mm-info{background:var(--s2);border-radius:8px;padding:10px;margin-bottom:10px}
+.mm-info-row{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);padding:3px 0}
+.mm-info-val{font-family:'DM Mono',monospace;color:var(--text)}
+.mm-close{width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--muted);font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;margin-top:6px}
 /* インライン編集 */
 .srow{cursor:pointer;transition:background .12s}
 .srow:active{background:var(--s1)}
@@ -320,6 +342,19 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
 .settings-item-desc{font-size:11px;color:var(--muted)}
 .settings-item.disabled{opacity:.4;pointer-events:none}
 .settings-close{background:none;border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--muted);font-size:12px;font-family:'Noto Sans JP',sans-serif;cursor:pointer;margin-top:8px}
+/* チェンジログ画面 */
+.changelog-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:300;overflow-y:auto;padding:20px 16px 80px;max-width:480px;margin:0 auto}
+.changelog-screen.on{display:block}
+.cl-header{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.cl-back{background:none;border:1px solid var(--border);border-radius:8px;width:36px;height:36px;color:var(--text);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cl-back:active{background:var(--s2)}
+.cl-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;color:var(--c-depart)}
+.cl-ver{background:var(--s1);border-radius:12px;padding:14px;margin-bottom:10px;border-left:3px solid var(--c-depart)}
+.cl-ver-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cl-ver-num{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--c-depart);letter-spacing:1px}
+.cl-ver-date{font-family:'DM Mono',monospace;font-size:10px;color:var(--muted)}
+.cl-item{font-size:12px;color:var(--text);line-height:1.8;padding-left:12px;position:relative}
+.cl-item::before{content:'•';position:absolute;left:0;color:var(--c-depart)}
 
 /* ===== PDF出力用スタイル ===== */
 @media print{
@@ -428,11 +463,77 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     </div>
   </div>
 
+  <div class="settings-section">
+    <div class="settings-section-label">情報</div>
+    <div class="settings-item" onclick="openChangelog()">
+      <div class="settings-item-icon">📝</div>
+      <div class="settings-item-body">
+        <div class="settings-item-name">チェンジログ</div>
+        <div class="settings-item-desc">バージョン履歴・更新内容</div>
+      </div>
+    </div>
+  </div>
+
   <button class="settings-close" onclick="closeSettings()">✕ 閉じる</button>
 </div>
 
 <!-- PDF出力用レポート（印刷時のみ表示） -->
 <div class="pdf-report" id="pdf-report"></div>
+
+<!-- 月拘束設定モーダル -->
+
+<!-- チェンジログ画面 -->
+<div class="changelog-screen" id="changelog-screen">
+  <div class="cl-header">
+    <button class="cl-back" onclick="closeChangelog()">‹</button>
+    <div class="cl-title">CHANGELOG</div>
+  </div>
+  <div id="changelog-content"></div>
+</div>
+
+<div class="month-modal-overlay" id="month-modal-overlay" onclick="closeMonthModal()">
+  <div class="month-modal" onclick="event.stopPropagation()">
+    <div class="mm-title">月間拘束時間 設定</div>
+
+    <div class="mm-section">
+      <div class="mm-label">起算日</div>
+      <div class="mm-tabs">
+        <button class="mm-tab active" id="mm-tab-month" onclick="setMonthCutoffMode('month')">月初（1日）</button>
+        <button class="mm-tab" id="mm-tab-custom" onclick="setMonthCutoffMode('custom')">締日指定</button>
+      </div>
+      <div id="mm-cutoff-drum" style="display:none;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">毎月</span>
+          <div class="srow-drum" id="mm-day-drum"><div class="srow-drum-sel"></div><div class="srow-drum-inner" id="mm-day-inner"></div></div>
+          <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace">日 起算</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="mm-section">
+      <div class="mm-label">労使協定延長</div>
+      <div class="mm-check" onclick="toggleExtendedMode()">
+        <div class="mm-checkbox" id="mm-ext-check">　</div>
+        <div>
+          <div class="mm-check-text">労使協定による延長</div>
+          <div class="mm-check-sub">上限を310h/月に拡大（年6回まで）</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="mm-section">
+      <div class="mm-label">今期間のステータス</div>
+      <div class="mm-info" id="mm-status-info"></div>
+    </div>
+
+    <div class="mm-section">
+      <div class="mm-label">年間 284h超過カウント（年6回まで）</div>
+      <div class="mm-info" id="mm-year-info"></div>
+    </div>
+
+    <button class="mm-close" onclick="closeMonthModal()">✕ 閉じる</button>
+  </div>
+</div>
 
 <!-- ===== オープニング画面 ===== -->
 <div id="opening-screen" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;max-width:480px;margin:0 auto;">
@@ -441,7 +542,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div style="text-align:center;margin-bottom:32px">
     <div id="op-appname" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--c-depart);line-height:1">SELMANE</div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px">SELF MANAGEMENT FOR DRIVERS</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.11.4</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.12.1</div>
   </div>
 
   <!-- 日付 -->
@@ -480,7 +581,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.11.4</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.12.1</div>
 
 <!-- モード切替タブ -->
 <div class="mode-tabs">
@@ -1211,7 +1312,9 @@ function renderWeekNav(){
   const row = document.getElementById('week-compliance-row');
   const driveOk = weekDriveMins <= 44*60;
   const twoWkOk = twoWeekDriveAvg <= 44*60;
-  const monthOk = monthBoundMins <= 284*60;
+  const monthOk = monthBoundMins <= getMonthLimit();
+  const monthRemain = getMonthLimit() - monthBoundMins;
+  const limitLabel = extendedMode?'310h以内':'284h以内';
 
   row.innerHTML = `
     <div class="wcb">
@@ -1229,10 +1332,10 @@ function renderWeekNav(){
       <div class="wcv ${specialOk?week15hCount>0?'warn':'ok':'over'}">${week15hCount}/2回</div>
       <div class="wc-badge" style="color:${specialOk?'var(--ok)':'var(--over)'}">${week15hCount>2?'超過！':week15hCount===2?'上限到達':week15hCount>0?'使用中':'未使用'}</div>
     </div>
-    <div class="wcb">
-      <div class="wcl">月拘束</div>
-      <div class="wcv ${monthOk?'ok':monthBoundMins<=310*60?'warn':'over'}">${fmtHM(monthBoundMins*60)}</div>
-      <div class="wc-badge" style="color:${monthOk?'var(--ok)':monthBoundMins<=310*60?'var(--warn)':'var(--over)'}">${monthOk?'284h以内 ✓':monthBoundMins<=310*60?'要注意':'超過!'}</div>
+    <div class="wcb tappable" onclick="openMonthModal()">
+      <div class="wcl">月拘束${monthCutoffMode==='custom'?'('+monthCutoffDay+'日〆)':''}</div>
+      <div class="wcv ${monthOk?'ok':monthBoundMins<=getMonthLimit()?'warn':'over'}">${fmtHM(monthBoundMins*60)}</div>
+      <div class="wc-badge" style="color:${monthOk?'var(--ok)':monthBoundMins<=getMonthLimit()?'var(--warn)':'var(--over)'}">${monthRemain<=0?'超過!':monthRemain<=20*60?'残'+fmtHM(monthRemain*60):limitLabel+' ✓'}</div>
     </div>`;
 }
 
@@ -1247,19 +1350,132 @@ function calcPrev7DriveMins(mon){
   return total;
 }
 
+// ===== 月拘束設定 =====
+let monthCutoffMode=localStorage.getItem('selmane_cutoffMode')||'month';
+let monthCutoffDay=parseInt(localStorage.getItem('selmane_cutoffDay'))||1;
+let extendedMode=localStorage.getItem('selmane_extended')==='true';
+const MONTH_LIMIT_NORMAL=284*60;
+const MONTH_LIMIT_EXTENDED=310*60;
+function getMonthLimit(){return extendedMode?MONTH_LIMIT_EXTENDED:MONTH_LIMIT_NORMAL;}
+
 function calcMonthBoundMins(){
   const today=new Date();
-  const year=today.getFullYear(),month=today.getMonth();
+  // 起算日に基づいて期間の開始・終了を計算
+  let periodStart,periodEnd;
+  const cutDay=monthCutoffMode==='custom'?monthCutoffDay:1;
+  if(today.getDate()>=cutDay){
+    periodStart=new Date(today.getFullYear(),today.getMonth(),cutDay);
+    periodEnd=new Date(today.getFullYear(),today.getMonth()+1,cutDay-1);
+  } else {
+    periodStart=new Date(today.getFullYear(),today.getMonth()-1,cutDay);
+    periodEnd=new Date(today.getFullYear(),today.getMonth(),cutDay-1);
+  }
+  periodEnd.setHours(23,59,59);
+
   let total=0;
   Object.entries(simPlans).forEach(([k,plan])=>{
-    const d=new Date(plan.tasks.length?plan.tasks[0].startMs||0:0);
-    // キーから日付を再構築
     const parts=k.split('-');
-    if(parseInt(parts[0])===year && parseInt(parts[1])===month){
+    const d=new Date(parseInt(parts[0]),parseInt(parts[1]),parseInt(parts[2]));
+    if(d>=periodStart&&d<=periodEnd){
       total+=plan.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
     }
   });
   return total;
+}
+
+// 年間284h超過カウント
+function calcYearOverCount(){
+  const today=new Date();
+  const cutDay=monthCutoffMode==='custom'?monthCutoffDay:1;
+  let count=0;
+  // 年度の起算月を1月として12ヶ月分チェック
+  for(let m=0;m<12;m++){
+    const pStart=new Date(today.getFullYear(),m,cutDay);
+    const pEnd=new Date(today.getFullYear(),m+1,cutDay-1);
+    pEnd.setHours(23,59,59);
+    // 未来の期間はスキップ
+    if(pStart>today) break;
+    let total=0;
+    Object.entries(simPlans).forEach(([k,plan])=>{
+      const parts=k.split('-');
+      const d=new Date(parseInt(parts[0]),parseInt(parts[1]),parseInt(parts[2]));
+      if(d>=pStart&&d<=pEnd){
+        total+=plan.tasks.filter(t=>!taskById(t.taskId)?.isOffDuty).reduce((s,t)=>s+t.durationMin,0);
+      }
+    });
+    if(total>MONTH_LIMIT_NORMAL) count++;
+  }
+  return count;
+}
+
+// モーダル開閉
+function openMonthModal(){
+  document.getElementById('month-modal-overlay').classList.add('on');
+  // タブ状態復元
+  document.getElementById('mm-tab-month').classList.toggle('active',monthCutoffMode==='month');
+  document.getElementById('mm-tab-custom').classList.toggle('active',monthCutoffMode==='custom');
+  document.getElementById('mm-cutoff-drum').style.display=monthCutoffMode==='custom'?'block':'none';
+  // チェック状態復元
+  const chk=document.getElementById('mm-ext-check');
+  chk.classList.toggle('checked',extendedMode);
+  chk.textContent=extendedMode?'✓':'　';
+  // ドラム初期化
+  if(monthCutoffMode==='custom') buildMonthDayDrum();
+  // ステータス更新
+  updateMonthModalInfo();
+}
+
+function closeMonthModal(){
+  document.getElementById('month-modal-overlay').classList.remove('on');
+  renderWeekNav();
+}
+
+function setMonthCutoffMode(mode){
+  monthCutoffMode=mode;
+  localStorage.setItem('selmane_cutoffMode',mode);
+  document.getElementById('mm-tab-month').classList.toggle('active',mode==='month');
+  document.getElementById('mm-tab-custom').classList.toggle('active',mode==='custom');
+  document.getElementById('mm-cutoff-drum').style.display=mode==='custom'?'block':'none';
+  if(mode==='custom') buildMonthDayDrum();
+  updateMonthModalInfo();
+}
+
+function toggleExtendedMode(){
+  extendedMode=!extendedMode;
+  localStorage.setItem('selmane_extended',extendedMode?'true':'false');
+  const chk=document.getElementById('mm-ext-check');
+  chk.classList.toggle('checked',extendedMode);
+  chk.textContent=extendedMode?'✓':'　';
+  updateMonthModalInfo();
+}
+
+let mmDrumDay=1;
+function buildMonthDayDrum(){
+  const DAY_VALS=Array.from({length:28},(_,i)=>i+1);
+  mmDrumDay=monthCutoffDay;
+  buildRowDrum('mm-day-inner','mm-day-drum',DAY_VALS,mmDrumDay,999,'mmd');
+}
+
+function updateMonthModalInfo(){
+  // 今期間のステータス
+  const mBound=calcMonthBoundMins();
+  const limit=getMonthLimit();
+  const remain=limit-mBound;
+  const limitH=Math.floor(limit/60);
+  const info=document.getElementById('mm-status-info');
+  const cutLabel=monthCutoffMode==='custom'?`毎月${monthCutoffDay}日起算`:'月初（1日）起算';
+  info.innerHTML=`
+    <div class="mm-info-row"><span>起算</span><span class="mm-info-val">${cutLabel}</span></div>
+    <div class="mm-info-row"><span>上限</span><span class="mm-info-val">${limitH}h${extendedMode?' (協定延長)':''}</span></div>
+    <div class="mm-info-row"><span>今期間累計</span><span class="mm-info-val" style="color:${mBound>limit?'var(--over)':remain<=20*60?'var(--warn)':'var(--ok)'}">${fmtHM(mBound*60)}</span></div>
+    <div class="mm-info-row"><span>残り</span><span class="mm-info-val" style="color:${remain<=0?'var(--over)':remain<=20*60?'var(--warn)':'var(--ok)'}">${remain>0?fmtHM(remain*60):'超過!'}</span></div>`;
+  // 年間超過カウント
+  const yearOver=calcYearOverCount();
+  const yearOk=yearOver<=6;
+  const yInfo=document.getElementById('mm-year-info');
+  yInfo.innerHTML=`
+    <div class="mm-info-row"><span>284h超過回数</span><span class="mm-info-val" style="color:${yearOk?yearOver>0?'var(--warn)':'var(--ok)':'var(--over)'}">${yearOver}/6回</span></div>
+    <div class="mm-info-row"><span>ステータス</span><span class="mm-info-val" style="color:${yearOk?'var(--ok)':'var(--over)'}">${yearOver>6?'超過！':yearOver===6?'上限到達':yearOver>0?'使用中':'未使用'}</span></div>`;
 }
 
 function shiftWeek(dir){
@@ -1875,6 +2091,7 @@ function buildRowDrum(innerId, drumId, vals, current, rowIdx, type){
       el.classList.toggle('center',parseInt(el.dataset.val)===val);
     });
     if(type.startsWith('c'))updateEdClockCalc(rowIdx);
+    if(type==='mmd'){monthCutoffDay=val;mmDrumDay=val;localStorage.setItem('selmane_cutoffDay',val);updateMonthModalInfo();}
   }
 
   const drum=document.getElementById(drumId);
@@ -2799,6 +3016,141 @@ async function initOpening(){
   loadSafetyTip(activeCampaign);
 }
 
+// ===== チェンジログ =====
+const CHANGELOG=[
+  {ver:'1.12.1',date:'2026-03-20',changes:[
+    '設定パネルにチェンジログ画面を追加',
+    'バージョン履歴・更新内容を全画面で一覧表示',
+    '戻るボタンで通常画面に復帰',
+  ]},
+  {ver:'1.12.0',date:'2026-03-20',changes:[
+    '月間拘束時間の設定モーダル追加（月拘束ラベルタップで開く）',
+    '起算日を月初/締日指定（ドラムロール1〜28日）で切り替え可能に',
+    '労使協定延長モード追加（チェックONで上限310h/月）',
+    'デッドライン警告：残り20h以下で週次コンプライアンス枠に警告表示',
+    '年間284h超過カウント表示（年6回まで）',
+    '週次コンプライアンス：1週合計を走行距離(km)表示に変更',
+    '設定はlocalStorageに保存（ブラウザ閉じても維持）',
+  ]},
+  {ver:'1.11.4',date:'2026-03-20',changes:[
+    '週次コンプライアンス：1週合計を距離表示に変更（各日のオドメーター差分を合計）',
+    '2週平均・1週合計の「法令外・参考値」「遵守項目」ラベルを削除',
+  ]},
+  {ver:'1.11.3',date:'2026-03-20',changes:[
+    'オープニング画面のSELF MANAGEMENT FOR DRIVERS下にバージョン表示追加',
+  ]},
+  {ver:'1.11.2',date:'2026-03-20',changes:[
+    '週次コンプライアンス：1週合計(運転)に「法令外・参考値」ラベル追加',
+    '2週平均(運転)に「遵守項目」ラベル追加',
+    '告示準拠：運転時間規制は2週平均44hが正であることを明確化',
+  ]},
+  {ver:'1.11.1',date:'2026-03-20',changes:[
+    '日付表示に年号追加（例：(令和8年)2026/03/20）',
+    'メインヘッダー・オープニング画面の両方に対応',
+  ]},
+  {ver:'1.11.0',date:'2026-03-20',changes:[
+    '2週平均運転時間44hの表示を週次コンプライアンスに復活（4枠表示）',
+    '休憩有効時間ルール実装（改善基準告示準拠）',
+    '  - 10分未満 → 休憩として無効（連続運転リセットに使えない）',
+    '  - 10分以上〜15分未満 → 10分として計算',
+    '  - 15分以上 → 実時間でカウント',
+    'シミュレーション・実績モード・PDF出力の3箇所すべてに適用',
+  ]},
+  {ver:'1.10.0',date:'2026-03-20',changes:[
+    '【16時間特例ルール（2024年改善基準告示）】',
+    '  - 15h超〜16h：週2回まで特例適用（警告/黄色）',
+    '  - 週3回以上15h超or16h超過：違反（赤）',
+    'ゲージ・タイムラインを16h基準に拡張（13h/15h/16hの3本線）',
+    'アラート3パターン追加（16h超過・特例枠なし・特例適用中）',
+    'シミュ結果に16h特例行追加（16hまで残り・特例使用回数・特例残り）',
+    'チェックリストに「16h特例（週2回まで）」行追加',
+    '週次コンプライアンスに16h特例使用回数表示追加',
+    'PDF出力のサマリー・日別判定・タイムラインすべて16h対応',
+    '【時刻指定ドラム】',
+    '  - 新規追加・タスク間挿入・インライン編集の3箇所に対応',
+    '  - 「所要時間」「時刻指定」の切り替えボタン',
+    '  - 時刻指定時は開始HH:MM→終了HH:MMの4ドラムロール',
+    '  - 差分自動計算・デフォルト開始時刻を前タスク終了から自動セット',
+    '【2日平均運転時間ロジック全面刷新】',
+    '  - 未確定日＝休みとみなし9h想定で計算',
+    '  - 前日比・翌日比を個別に判定して表示（✓/✗付き）',
+    '  - いずれかOKなら緑、両方NGなら赤',
+    '  - チェックリストにサブ行で前日/翌日との平均を詳細表示',
+    '  - 翌日未確定時は「翌日○h以下なら適正」のガイド表示',
+    '  - 確定時の翌日注意に具体的な内容を表示',
+    '  - 翌日確定時に前日リザルトのnextDayAvgOkフラグを遡り更新',
+    'ドラムロール時間範囲を0〜16hに拡張',
+    '日報テキストの拘束時間判定を16h特例対応に更新',
+    '週間日別ボタンに確定マーク（✓）表示追加',
+  ]},
+  {ver:'1.9.1',date:'2026-03-19',changes:[
+    '帰庫確定ボタンの動作修正（確定状態が正しくリザルトに反映されるように）',
+    'タスクなし時の確定ボタン表示状態修正',
+  ]},
+  {ver:'1.9.0',date:'2026-03-19',changes:[
+    '帰庫確定ボタン追加',
+    '確定状態でリザルト枠色変更（青/黄/赤・太枠）',
+    '確定時は「終了予定」→「終了時間」に表記変更',
+    '確定取り消し機能',
+    '確定バッジに帰庫時刻表示',
+  ]},
+  {ver:'1.8.1',date:'2026-03-18',changes:[
+    '運転可能残の重複表示を解消',
+    'マイナス超過時の表示対応（-0h30mなど）',
+  ]},
+  {ver:'1.8.0',date:'2026-03-18',changes:[
+    '中間点呼・その他タスクにメモ機能追加',
+    'その他タスクをマーカー化（時間なし・メモ付き）',
+  ]},
+  {ver:'1.7.1',date:'2026-03-18',changes:[
+    '残り拘束時間（13h/15h）・運転可能残をリザルト上部に常時表示',
+  ]},
+  {ver:'1.7.0',date:'2026-03-17',changes:[
+    '中間点呼ボタン追加（マーカータスク・メモ付き）',
+  ]},
+  {ver:'1.6.0',date:'2026-03-17',changes:[
+    '2日平均運転時間チェック追加',
+    '運転可能残時間の表示追加',
+  ]},
+  {ver:'1.5.1',date:'2026-03-17',changes:[
+    '連続運転計算の追加バグ修正（分割休憩の累計計算精度向上）',
+  ]},
+  {ver:'1.5.0',date:'2026-03-17',changes:[
+    '休息タスク追加（拘束時間から除外される特別タスク）',
+  ]},
+  {ver:'1.4.1',date:'2026-03-16',changes:[
+    '連続運転リセットのバグ修正（分割休憩の累計が正しく計算されるように）',
+  ]},
+  {ver:'1.4.0',date:'2026-03-16',changes:[
+    'タスク編集で種類変更に対応',
+  ]},
+];
+
+function openChangelog(){
+  closeSettings();
+  const screen=document.getElementById('changelog-screen');
+  const content=document.getElementById('changelog-content');
+  content.innerHTML='';
+  CHANGELOG.forEach(v=>{
+    const div=document.createElement('div');div.className='cl-ver';
+    let items='';
+    v.changes.forEach(c=>{
+      if(c.startsWith('  ')){
+        items+=`<div class="cl-item" style="padding-left:24px;font-size:11px;color:var(--muted)">${c.trim()}</div>`;
+      } else {
+        items+=`<div class="cl-item">${c}</div>`;
+      }
+    });
+    div.innerHTML=`<div class="cl-ver-head"><div class="cl-ver-num">v${v.ver}</div><div class="cl-ver-date">${v.date}</div></div>${items}`;
+    content.appendChild(div);
+  });
+  screen.classList.add('on');
+}
+
+function closeChangelog(){
+  document.getElementById('changelog-screen').classList.remove('on');
+}
+
 // ===== 設定パネル =====
 function openSettings(){
   document.getElementById('settings-panel').classList.add('on');
@@ -2813,7 +3165,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.11.4',
+    version:'1.12.1',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
