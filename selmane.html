@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>SELMANE v1.13.2</title>
+<title>SELMANE v1.13.3</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
@@ -539,7 +539,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div style="text-align:center;margin-bottom:32px">
     <div id="op-appname" style="font-family:'Bebas Neue',sans-serif;font-size:48px;letter-spacing:4px;color:var(--c-depart);line-height:1">SELMANE</div>
     <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--muted);margin-top:4px">SELF MANAGEMENT FOR DRIVERS</div>
-    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.13.2</div>
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.5;margin-top:3px" id="op-ver">v1.13.3</div>
   </div>
 
   <!-- 日付 -->
@@ -562,6 +562,25 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
     </div>
   </div>
 
+  <!-- プロフィール入力 -->
+  <div style="width:100%;margin-bottom:20px">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">DRIVER PROFILE</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;width:40px;flex-shrink:0">氏名</span>
+        <input type="text" class="place-input" id="op-driver-name" placeholder="本名" style="flex:1" oninput="saveProfileFromOp()">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;width:40px;flex-shrink:0">ID</span>
+        <input type="text" class="place-input" id="op-driver-id" placeholder="ドライバーID（任意）" style="flex:1" oninput="saveProfileFromOp()">
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:var(--muted);font-family:'DM Mono',monospace;width:40px;flex-shrink:0">車番</span>
+        <input type="text" class="place-input" id="op-vehicle-num" placeholder="ナンバー（例: 神戸100あ1234）" style="flex:1" oninput="saveProfileFromOp()">
+      </div>
+    </div>
+  </div>
+
   <!-- ボタン -->
   <div style="display:flex;flex-direction:column;gap:10px;width:100%">
     <button onclick="closeOpening()" style="background:var(--c-depart);color:#000;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:700;font-family:'Noto Sans JP',sans-serif;cursor:pointer;letter-spacing:1px;transition:opacity .15s" onactive="this.style.opacity=.8">
@@ -578,7 +597,7 @@ body{background:var(--bg);color:var(--text);font-family:'Noto Sans JP',sans-seri
   <div><div class="app-title">SELMANE<small>SELF MANAGEMENT FOR DRIVERS</small></div></div>
   <div class="date-info" id="date-info"></div>
 </div>
-<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.13.2</div>
+<div style="text-align:right;font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);opacity:.4;margin-top:-10px;margin-bottom:6px" id="app-ver">v1.13.3</div>
 <div id="profile-bar" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--muted);margin-bottom:8px;padding:6px 10px;background:var(--s1);border-radius:8px;display:flex;justify-content:space-between"></div>
 
 <!-- モード切替タブ -->
@@ -3144,6 +3163,11 @@ async function initOpening(){
   const days = ['日','月','火','水','木','金','土'];
   document.getElementById('op-date').textContent =
     `(${toReki(now.getFullYear())}年)${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日（${days[now.getDay()]}）`;
+  // プロフィール値をオープニング欄に読み込み
+  const p=getProfile();
+  const opN=document.getElementById('op-driver-name');if(opN)opN.value=p.driverName;
+  const opI=document.getElementById('op-driver-id');if(opI)opI.value=p.driverId;
+  const opV=document.getElementById('op-vehicle-num');if(opV)opV.value=p.vehicleNum;
   // 交通安全運動チェック（キャッシュ or API取得）とAI注意喚起を並行実行
   const activeCampaign = await checkSafetyCampaign();
   loadSafetyTip(activeCampaign);
@@ -3151,6 +3175,11 @@ async function initOpening(){
 
 // ===== チェンジログ =====
 const CHANGELOG=[
+  {ver:'1.13.3',date:'2026-03-20',changes:[
+    'オープニング画面に氏名・ドライバーID・車番の入力欄追加',
+    'オープニングと設定パネルのプロフィール欄を双方向同期',
+    'どちらで入力しても即座にもう片方に反映',
+  ]},
   {ver:'1.13.2',date:'2026-03-20',changes:[
     '帰庫確定カード下に「📝 メモ帳」機能を追加',
     'イレギュラーな出来事、渋滞箇所、法令遵守困難な理由等を日別に記録可能',
@@ -3331,6 +3360,22 @@ function saveProfile(){
   localStorage.setItem('selmane_driverName',document.getElementById('set-driver-name')?.value||'');
   localStorage.setItem('selmane_driverId',document.getElementById('set-driver-id')?.value||'');
   localStorage.setItem('selmane_vehicleNum',document.getElementById('set-vehicle-num')?.value||'');
+  // オープニング側にも反映
+  const p=getProfile();
+  const opN=document.getElementById('op-driver-name');if(opN&&opN.value!==p.driverName)opN.value=p.driverName;
+  const opI=document.getElementById('op-driver-id');if(opI&&opI.value!==p.driverId)opI.value=p.driverId;
+  const opV=document.getElementById('op-vehicle-num');if(opV&&opV.value!==p.vehicleNum)opV.value=p.vehicleNum;
+  updateProfileBar();
+}
+function saveProfileFromOp(){
+  localStorage.setItem('selmane_driverName',document.getElementById('op-driver-name')?.value||'');
+  localStorage.setItem('selmane_driverId',document.getElementById('op-driver-id')?.value||'');
+  localStorage.setItem('selmane_vehicleNum',document.getElementById('op-vehicle-num')?.value||'');
+  // 設定パネル側にも反映
+  const p=getProfile();
+  const sN=document.getElementById('set-driver-name');if(sN&&sN.value!==p.driverName)sN.value=p.driverName;
+  const sI=document.getElementById('set-driver-id');if(sI&&sI.value!==p.driverId)sI.value=p.driverId;
+  const sV=document.getElementById('set-vehicle-num');if(sV&&sV.value!==p.vehicleNum)sV.value=p.vehicleNum;
   updateProfileBar();
 }
 function updateProfileBar(){
@@ -3364,7 +3409,7 @@ function closeSettings(){
 function exportData(){
   closeSettings();
   const data={
-    version:'1.13.2',
+    version:'1.13.3',
     exportedAt:new Date().toISOString(),
     dtacho_logs:JSON.parse(localStorage.getItem('dtacho_logs')||'[]'),
     dtacho_meta:JSON.parse(localStorage.getItem('dtacho_meta')||'{}'),
